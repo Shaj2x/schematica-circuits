@@ -1,0 +1,10 @@
+[package]
+name = "schematica-solver"
+version = "0.1.0"
+edition = "2024"
+description = "DC circuit solver using Modified Nodal Analysis"
+
+[dependencies]
+serde = { version = "1.0.229", features = ["derive"] }
+serde_json = { version = "1.0.151", features = ["float_roundtrip"] }
+thiserror = "2.0.21"
