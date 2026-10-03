@@ -1,0 +1,52 @@
+{
+  "name": "series_parallel",
+  "description": "9 V source, 1 k\u03a9 in series with two 2 k\u03a9 resistors in parallel.",
+  "derivation": "2k || 2k = 1k, so v_a = 9 * 1k/(1k+1k) = 4.5 V. I(R1) = 4.5 mA, splitting equally: 2.25 mA through each of R2 and R3.",
+  "netlist": {
+    "version": 1,
+    "ground": "gnd",
+    "components": [
+      {
+        "id": "V1",
+        "type": "voltage_source",
+        "pos": "in",
+        "neg": "gnd",
+        "value": 9
+      },
+      {
+        "id": "R1",
+        "type": "resistor",
+        "a": "in",
+        "b": "a",
+        "value": 1000
+      },
+      {
+        "id": "R2",
+        "type": "resistor",
+        "a": "a",
+        "b": "gnd",
+        "value": 2000
+      },
+      {
+        "id": "R3",
+        "type": "resistor",
+        "a": "a",
+        "b": "gnd",
+        "value": 2000
+      }
+    ]
+  },
+  "expected": {
+    "node_voltages": {
+      "gnd": 0.0,
+      "in": 9.0,
+      "a": 4.5
+    },
+    "branch_currents": {
+      "V1": -0.0045,
+      "R1": 0.0045,
+      "R2": 0.00225,
+      "R3": 0.00225
+    }
+  }
+}

@@ -1,0 +1,78 @@
+{
+  "name": "two_node_two_sources",
+  "description": "Two unknown nodes fed by a 20 V and a 10 V source: a standard two-equation nodal analysis exercise.",
+  "derivation": "KCL at b (x20): 4(b-20) + 2b + 5(b-c) = 0, so 11b - 5c = 80. KCL at c (x12): 3(c-b) + 2c + 6(c-10) = 0, so -3b + 11c = 60. Determinant 121 - 15 = 106. b = (80*11 + 5*60)/106 = 590/53 V, c = (11*60 + 3*80)/106 = 450/53 V. Then I(R1) = (20-b)/5 = 94/53 A, I(R2) = b/10 = 59/53 A, I(R3) = (b-c)/4 = 35/53 A, I(R4) = c/6 = 75/53 A, I(R5) = (10-c)/2 = 40/53 A.",
+  "netlist": {
+    "version": 1,
+    "ground": "gnd",
+    "components": [
+      {
+        "id": "V1",
+        "type": "voltage_source",
+        "pos": "a",
+        "neg": "gnd",
+        "value": 20
+      },
+      {
+        "id": "R1",
+        "type": "resistor",
+        "a": "a",
+        "b": "b",
+        "value": 5
+      },
+      {
+        "id": "R2",
+        "type": "resistor",
+        "a": "b",
+        "b": "gnd",
+        "value": 10
+      },
+      {
+        "id": "R3",
+        "type": "resistor",
+        "a": "b",
+        "b": "c",
+        "value": 4
+      },
+      {
+        "id": "R4",
+        "type": "resistor",
+        "a": "c",
+        "b": "gnd",
+        "value": 6
+      },
+      {
+        "id": "R5",
+        "type": "resistor",
+        "a": "d",
+        "b": "c",
+        "value": 2
+      },
+      {
+        "id": "V2",
+        "type": "voltage_source",
+        "pos": "d",
+        "neg": "gnd",
+        "value": 10
+      }
+    ]
+  },
+  "expected": {
+    "node_voltages": {
+      "gnd": 0.0,
+      "a": 20.0,
+      "b": 11.132075471698114,
+      "c": 8.49056603773585,
+      "d": 10.0
+    },
+    "branch_currents": {
+      "V1": -1.7735849056603774,
+      "R1": 1.7735849056603774,
+      "R2": 1.1132075471698113,
+      "R3": 0.660377358490566,
+      "R4": 1.4150943396226414,
+      "R5": 0.7547169811320755,
+      "V2": -0.7547169811320755
+    }
+  }
+}

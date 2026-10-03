@@ -1,0 +1,52 @@
+{
+  "name": "mixed_sources",
+  "description": "A voltage source and a current source both driving node b (superposition example).",
+  "derivation": "KCL at b (x12): 3(b-12) + 2b - 12 = 0, so 5b = 48 and b = 9.6 V. By superposition: the 12 V source alone gives 12 * 6/10 = 7.2 V, the 1 A source alone gives 1 * (4 || 6) = 2.4 V, total 9.6 V. I(R1) = (12-9.6)/4 = 0.6 A, I(R2) = 9.6/6 = 1.6 A.",
+  "netlist": {
+    "version": 1,
+    "ground": "gnd",
+    "components": [
+      {
+        "id": "V1",
+        "type": "voltage_source",
+        "pos": "a",
+        "neg": "gnd",
+        "value": 12
+      },
+      {
+        "id": "R1",
+        "type": "resistor",
+        "a": "a",
+        "b": "b",
+        "value": 4
+      },
+      {
+        "id": "R2",
+        "type": "resistor",
+        "a": "b",
+        "b": "gnd",
+        "value": 6
+      },
+      {
+        "id": "I1",
+        "type": "current_source",
+        "from": "gnd",
+        "to": "b",
+        "value": 1
+      }
+    ]
+  },
+  "expected": {
+    "node_voltages": {
+      "gnd": 0.0,
+      "a": 12.0,
+      "b": 9.6
+    },
+    "branch_currents": {
+      "V1": -0.6,
+      "R1": 0.6,
+      "R2": 1.6,
+      "I1": 1.0
+    }
+  }
+}

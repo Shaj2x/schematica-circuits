@@ -1,0 +1,43 @@
+{
+  "name": "current_divider",
+  "description": "2 mA current source driving 1 k\u03a9 in parallel with 4 k\u03a9.",
+  "derivation": "R_eq = 1k || 4k = 800 \u03a9, so v_n = 2 mA * 800 \u03a9 = 1.6 V. I(R1) = 1.6/1k = 1.6 mA, I(R2) = 1.6/4k = 0.4 mA (current divider: 2 mA * 4k/5k and 2 mA * 1k/5k).",
+  "netlist": {
+    "version": 1,
+    "ground": "gnd",
+    "components": [
+      {
+        "id": "I1",
+        "type": "current_source",
+        "from": "gnd",
+        "to": "n",
+        "value": 0.002
+      },
+      {
+        "id": "R1",
+        "type": "resistor",
+        "a": "n",
+        "b": "gnd",
+        "value": 1000
+      },
+      {
+        "id": "R2",
+        "type": "resistor",
+        "a": "n",
+        "b": "gnd",
+        "value": 4000
+      }
+    ]
+  },
+  "expected": {
+    "node_voltages": {
+      "gnd": 0.0,
+      "n": 1.6
+    },
+    "branch_currents": {
+      "I1": 0.002,
+      "R1": 0.0016,
+      "R2": 0.0004
+    }
+  }
+}

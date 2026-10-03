@@ -1,0 +1,52 @@
+{
+  "name": "current_source_network",
+  "description": "5 mA current source driving 2 k\u03a9 in parallel with a 3 k\u03a9 + 3 k\u03a9 series branch.",
+  "derivation": "R_eq = 2k || (3k+3k) = 1.5k, so v_a = 5 mA * 1.5k = 7.5 V. The series branch is a divider: v_b = 7.5/2 = 3.75 V. I(R1) = 7.5/2k = 3.75 mA, I(R2) = I(R3) = 7.5/6k = 1.25 mA.",
+  "netlist": {
+    "version": 1,
+    "ground": "gnd",
+    "components": [
+      {
+        "id": "I1",
+        "type": "current_source",
+        "from": "gnd",
+        "to": "a",
+        "value": 0.005
+      },
+      {
+        "id": "R1",
+        "type": "resistor",
+        "a": "a",
+        "b": "gnd",
+        "value": 2000
+      },
+      {
+        "id": "R2",
+        "type": "resistor",
+        "a": "a",
+        "b": "b",
+        "value": 3000
+      },
+      {
+        "id": "R3",
+        "type": "resistor",
+        "a": "b",
+        "b": "gnd",
+        "value": 3000
+      }
+    ]
+  },
+  "expected": {
+    "node_voltages": {
+      "gnd": 0.0,
+      "a": 7.5,
+      "b": 3.75
+    },
+    "branch_currents": {
+      "I1": 0.005,
+      "R1": 0.00375,
+      "R2": 0.00125,
+      "R3": 0.00125
+    }
+  }
+}

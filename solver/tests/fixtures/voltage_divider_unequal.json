@@ -1,0 +1,44 @@
+{
+  "name": "voltage_divider_unequal",
+  "description": "12 V source across 2 k\u03a9 over 4 k\u03a9.",
+  "derivation": "v_out = 12 * 4k/(2k+4k) = 8 V. I = 12/6k = 2 mA.",
+  "netlist": {
+    "version": 1,
+    "ground": "0",
+    "components": [
+      {
+        "id": "V1",
+        "type": "voltage_source",
+        "pos": "in",
+        "neg": "0",
+        "value": 12
+      },
+      {
+        "id": "R1",
+        "type": "resistor",
+        "a": "in",
+        "b": "out",
+        "value": 2000
+      },
+      {
+        "id": "R2",
+        "type": "resistor",
+        "a": "out",
+        "b": "0",
+        "value": 4000
+      }
+    ]
+  },
+  "expected": {
+    "node_voltages": {
+      "0": 0.0,
+      "in": 12.0,
+      "out": 8.0
+    },
+    "branch_currents": {
+      "V1": -0.002,
+      "R1": 0.002,
+      "R2": 0.002
+    }
+  }
+}

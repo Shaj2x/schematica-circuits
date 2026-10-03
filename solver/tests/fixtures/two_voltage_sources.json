@@ -1,0 +1,61 @@
+{
+  "name": "two_voltage_sources",
+  "description": "Two voltage sources (10 V and 5 V) feeding a shared middle node; the 5 V source absorbs power.",
+  "derivation": "KCL at m (x2000): 2(m-10) + m + 2(m-5) = 0, so 5m = 30 and m = 6 V. I(R1) = (10-6)/1k = 4 mA, I(R2) = 6/2k = 3 mA, I(R3) = (6-5)/1k = 1 mA from m into b. That 1 mA enters V2 at its + terminal, so V2 reports +1 mA (it is being charged). V1 delivers 4 mA and reports -4 mA.",
+  "netlist": {
+    "version": 1,
+    "ground": "gnd",
+    "components": [
+      {
+        "id": "V1",
+        "type": "voltage_source",
+        "pos": "a",
+        "neg": "gnd",
+        "value": 10
+      },
+      {
+        "id": "R1",
+        "type": "resistor",
+        "a": "a",
+        "b": "m",
+        "value": 1000
+      },
+      {
+        "id": "R2",
+        "type": "resistor",
+        "a": "m",
+        "b": "gnd",
+        "value": 2000
+      },
+      {
+        "id": "R3",
+        "type": "resistor",
+        "a": "m",
+        "b": "b",
+        "value": 1000
+      },
+      {
+        "id": "V2",
+        "type": "voltage_source",
+        "pos": "b",
+        "neg": "gnd",
+        "value": 5
+      }
+    ]
+  },
+  "expected": {
+    "node_voltages": {
+      "gnd": 0.0,
+      "a": 10.0,
+      "m": 6.0,
+      "b": 5.0
+    },
+    "branch_currents": {
+      "V1": -0.004,
+      "R1": 0.004,
+      "R2": 0.003,
+      "R3": 0.001,
+      "V2": 0.001
+    }
+  }
+}

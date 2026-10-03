@@ -1,0 +1,44 @@
+{
+  "name": "voltage_divider_equal",
+  "description": "10 V source across two equal 1 k\u03a9 resistors.",
+  "derivation": "v_out = 10 * 1k/(1k+1k) = 5 V. I = 10/2k = 5 mA. V1 delivers power, so its current (pos to neg through the source) is -5 mA.",
+  "netlist": {
+    "version": 1,
+    "ground": "gnd",
+    "components": [
+      {
+        "id": "V1",
+        "type": "voltage_source",
+        "pos": "in",
+        "neg": "gnd",
+        "value": 10
+      },
+      {
+        "id": "R1",
+        "type": "resistor",
+        "a": "in",
+        "b": "out",
+        "value": 1000
+      },
+      {
+        "id": "R2",
+        "type": "resistor",
+        "a": "out",
+        "b": "gnd",
+        "value": 1000
+      }
+    ]
+  },
+  "expected": {
+    "node_voltages": {
+      "gnd": 0.0,
+      "in": 10.0,
+      "out": 5.0
+    },
+    "branch_currents": {
+      "V1": -0.005,
+      "R1": 0.005,
+      "R2": 0.005
+    }
+  }
+}

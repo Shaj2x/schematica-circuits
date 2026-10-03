@@ -1,0 +1,86 @@
+{
+  "name": "r2r_ladder",
+  "description": "Three-stage R-2R ladder (R = 1 k\u03a9) driven by 8 V; each node voltage halves.",
+  "derivation": "From the far end: R6 || R7 = 2k || 2k = 1k, plus R5 = 2k; in parallel with R4 = 1k, plus R3 = 2k; in parallel with R2 = 1k, plus R1 = 2k total. I(R1) = 8/2k = 4 mA, so n1 = 8 - 4 = 4 V. Each stage splits the current equally, so n2 = 2 V and n3 = 1 V.",
+  "netlist": {
+    "version": 1,
+    "ground": "gnd",
+    "components": [
+      {
+        "id": "V1",
+        "type": "voltage_source",
+        "pos": "n0",
+        "neg": "gnd",
+        "value": 8
+      },
+      {
+        "id": "R1",
+        "type": "resistor",
+        "a": "n0",
+        "b": "n1",
+        "value": 1000
+      },
+      {
+        "id": "R2",
+        "type": "resistor",
+        "a": "n1",
+        "b": "gnd",
+        "value": 2000
+      },
+      {
+        "id": "R3",
+        "type": "resistor",
+        "a": "n1",
+        "b": "n2",
+        "value": 1000
+      },
+      {
+        "id": "R4",
+        "type": "resistor",
+        "a": "n2",
+        "b": "gnd",
+        "value": 2000
+      },
+      {
+        "id": "R5",
+        "type": "resistor",
+        "a": "n2",
+        "b": "n3",
+        "value": 1000
+      },
+      {
+        "id": "R6",
+        "type": "resistor",
+        "a": "n3",
+        "b": "gnd",
+        "value": 2000
+      },
+      {
+        "id": "R7",
+        "type": "resistor",
+        "a": "n3",
+        "b": "gnd",
+        "value": 2000
+      }
+    ]
+  },
+  "expected": {
+    "node_voltages": {
+      "gnd": 0.0,
+      "n0": 8.0,
+      "n1": 4.0,
+      "n2": 2.0,
+      "n3": 1.0
+    },
+    "branch_currents": {
+      "V1": -0.004,
+      "R1": 0.004,
+      "R2": 0.002,
+      "R3": 0.002,
+      "R4": 0.001,
+      "R5": 0.001,
+      "R6": 0.0005,
+      "R7": 0.0005
+    }
+  }
+}

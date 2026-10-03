@@ -1,0 +1,52 @@
+{
+  "name": "negative_source_values",
+  "description": "Negative source values: a -5 V source and a current source whose -2 mA means current actually flows the other way.",
+  "derivation": "V1 = -5 V across the divider R1 = R2 = 1k, so v_a = -5 V and v_m = -2.5 V without I1. Superposing I1 (-2 mA into m, that is, 2 mA drawn out of m) through R1 || R2 = 500 \u03a9 (the source V1 is a short for superposition) adds -1 V: v_m = -3.5 V. I(R1) = (-5 - (-3.5))/1k = -1.5 mA, I(R2) = -3.5/1k = -3.5 mA. V1 current = -I(R1) = +1.5 mA.",
+  "netlist": {
+    "version": 1,
+    "ground": "ground",
+    "components": [
+      {
+        "id": "V1",
+        "type": "voltage_source",
+        "pos": "a",
+        "neg": "ground",
+        "value": -5
+      },
+      {
+        "id": "R1",
+        "type": "resistor",
+        "a": "a",
+        "b": "m",
+        "value": 1000
+      },
+      {
+        "id": "R2",
+        "type": "resistor",
+        "a": "m",
+        "b": "ground",
+        "value": 1000
+      },
+      {
+        "id": "I1",
+        "type": "current_source",
+        "from": "ground",
+        "to": "m",
+        "value": -0.002
+      }
+    ]
+  },
+  "expected": {
+    "node_voltages": {
+      "ground": 0.0,
+      "a": -5.0,
+      "m": -3.5
+    },
+    "branch_currents": {
+      "V1": 0.0015,
+      "R1": -0.0015,
+      "R2": -0.0035,
+      "I1": -0.002
+    }
+  }
+}

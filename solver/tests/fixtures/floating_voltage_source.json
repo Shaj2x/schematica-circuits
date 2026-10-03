@@ -1,0 +1,53 @@
+{
+  "name": "floating_voltage_source",
+  "description": "A 3 V source between two non-ground nodes, in series with resistors. By hand this needs a supernode; MNA handles it with one extra unknown.",
+  "derivation": "One loop: 10 V source, R1 (1k), V2 (3 V, + at b), R2 (2k). Constraint: b - c = 3. Same current I through R1 and R2: (10-b)/1k = c/2k = (b-3)/2k, so 20 - 2b = b - 3, b = 23/3 V, c = 14/3 V, I = 7/3 mA. Current enters V2 at + (b), so V2 reports +7/3 mA (it opposes the main source).",
+  "netlist": {
+    "version": 1,
+    "ground": "gnd",
+    "components": [
+      {
+        "id": "V1",
+        "type": "voltage_source",
+        "pos": "a",
+        "neg": "gnd",
+        "value": 10
+      },
+      {
+        "id": "R1",
+        "type": "resistor",
+        "a": "a",
+        "b": "b",
+        "value": 1000
+      },
+      {
+        "id": "V2",
+        "type": "voltage_source",
+        "pos": "b",
+        "neg": "c",
+        "value": 3
+      },
+      {
+        "id": "R2",
+        "type": "resistor",
+        "a": "c",
+        "b": "gnd",
+        "value": 2000
+      }
+    ]
+  },
+  "expected": {
+    "node_voltages": {
+      "gnd": 0.0,
+      "a": 10.0,
+      "b": 7.666666666666667,
+      "c": 4.666666666666667
+    },
+    "branch_currents": {
+      "V1": -0.0023333333333333335,
+      "R1": 0.0023333333333333335,
+      "V2": 0.0023333333333333335,
+      "R2": 0.0023333333333333335
+    }
+  }
+}

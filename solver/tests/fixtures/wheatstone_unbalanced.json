@@ -1,0 +1,69 @@
+{
+  "name": "wheatstone_unbalanced",
+  "description": "Unbalanced Wheatstone bridge (1k/2k against 2k/1k) with a 1 k\u03a9 bridge resistor.",
+  "derivation": "KCL at a (x2000): 2(a-10) + a + 2(a-b) = 0, so 5a - 2b = 20. KCL at b (x2000): (b-10) + 2b + 2(b-a) = 0, so -2a + 5b = 10. Solving: b = 30/7 V, a = 40/7 V. I(R5) = (a-b)/1k = 10/7 mA. Supply current = I(R1) + I(R3) = 30/7 + 20/7 = 50/7 mA.",
+  "netlist": {
+    "version": 1,
+    "ground": "gnd",
+    "components": [
+      {
+        "id": "V1",
+        "type": "voltage_source",
+        "pos": "top",
+        "neg": "gnd",
+        "value": 10
+      },
+      {
+        "id": "R1",
+        "type": "resistor",
+        "a": "top",
+        "b": "a",
+        "value": 1000
+      },
+      {
+        "id": "R2",
+        "type": "resistor",
+        "a": "a",
+        "b": "gnd",
+        "value": 2000
+      },
+      {
+        "id": "R3",
+        "type": "resistor",
+        "a": "top",
+        "b": "b",
+        "value": 2000
+      },
+      {
+        "id": "R4",
+        "type": "resistor",
+        "a": "b",
+        "b": "gnd",
+        "value": 1000
+      },
+      {
+        "id": "R5",
+        "type": "resistor",
+        "a": "a",
+        "b": "b",
+        "value": 1000
+      }
+    ]
+  },
+  "expected": {
+    "node_voltages": {
+      "gnd": 0.0,
+      "top": 10.0,
+      "a": 5.714285714285714,
+      "b": 4.285714285714286
+    },
+    "branch_currents": {
+      "V1": -0.007142857142857143,
+      "R1": 0.004285714285714286,
+      "R2": 0.002857142857142857,
+      "R3": 0.002857142857142857,
+      "R4": 0.004285714285714286,
+      "R5": 0.0014285714285714286
+    }
+  }
+}
