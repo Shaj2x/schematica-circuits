@@ -5,3 +5,6 @@ pub mod netlist;
 
 pub use error::SolverError;
 pub use netlist::{Component, NETLIST_VERSION, Netlist, Solution};
+
+#[allow(dead_code)] // wired up in the MNA commit
+mod linalg;
