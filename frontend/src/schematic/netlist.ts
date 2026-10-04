@@ -102,6 +102,10 @@ export function buildNetlist(schematic: Schematic): Connectivity {
         return { id: part.id, type: 'voltage_source', pos: first, neg: second, value: part.value }
       case 'current_source':
         return { id: part.id, type: 'current_source', from: first, to: second, value: part.value }
+      case 'capacitor':
+        return { id: part.id, type: 'capacitor', a: first, b: second, value: part.value, initial_voltage: part.initial ?? 0 }
+      case 'inductor':
+        return { id: part.id, type: 'inductor', a: first, b: second, value: part.value, initial_current: part.initial ?? 0 }
     }
   })
 

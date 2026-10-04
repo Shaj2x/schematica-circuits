@@ -26,6 +26,11 @@ export interface Part {
   a: Point
   b: Point
   value: number
+  /**
+   * Initial condition for a transient run: capacitor voltage v(a) − v(b), or
+   * inductor current from a to b. Ignored for other kinds; 0 when absent.
+   */
+  initial?: number
 }
 
 /** A straight wire between two grid points. */
@@ -63,6 +68,8 @@ export const KINDS: Record<ComponentKind, KindInfo> = {
   resistor: { label: 'Resistor', idPrefix: 'R', unit: 'Ω', defaultValue: 1000 },
   voltage_source: { label: 'Voltage source', idPrefix: 'V', unit: 'V', defaultValue: 5 },
   current_source: { label: 'Current source', idPrefix: 'I', unit: 'A', defaultValue: 0.001 },
+  capacitor: { label: 'Capacitor', idPrefix: 'C', unit: 'F', defaultValue: 1e-6 },
+  inductor: { label: 'Inductor', idPrefix: 'L', unit: 'H', defaultValue: 1e-3 },
 }
 
 export function pointKey(p: Point): string {

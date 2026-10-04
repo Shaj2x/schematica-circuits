@@ -8,11 +8,12 @@
  * network in the browser).
  */
 
-import init, { initSync, solve as wasmSolve } from './pkg/schematica_solver_wasm.js'
-import type { Netlist, SolveResult } from './types'
+import init, { initSync, solveTransient as wasmSolveTransient, solve as wasmSolve } from './pkg/schematica_solver_wasm.js'
+import type { Netlist, SolveResult, TransientOptions, TransientResult } from './types'
 
 export interface Solver {
   solve(netlist: Netlist): SolveResult
+  solveTransient(netlist: Netlist, options: TransientOptions): TransientResult
 }
 
 function wrap(): Solver {
@@ -20,17 +21,20 @@ function wrap(): Solver {
     solve(netlist) {
       return JSON.parse(wasmSolve(JSON.stringify(netlist))) as SolveResult
     },
+    solveTransient(netlist, options) {
+      return JSON.parse(wasmSolveTransient(JSON.stringify(netlist), JSON.stringify(options))) as TransientResult
+    },
   }
 }
 
 /**
- * Solves and measures wall-clock time, including the JSON round trip across
- * the WASM boundary. The editor shows this number, and the Phase 6 benchmarks
- * use it.
+ * Runs a solve and measures wall-clock time, including the JSON round trip
+ * across the WASM boundary. The editor shows this number, and the Phase 6
+ * benchmarks use it.
  */
-export function solveTimed(solver: Solver, netlist: Netlist): { result: SolveResult; ms: number } {
+export function solveTimed<T>(run: () => T): { result: T; ms: number } {
   const start = performance.now()
-  const result = solver.solve(netlist)
+  const result = run()
   return { result, ms: performance.now() - start }
 }
 

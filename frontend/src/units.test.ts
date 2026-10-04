@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { formatCompact, formatValue, parseValue } from './units'
+import { formatCompact, formatTick, formatValue, parseValue } from './units'
 
 describe('parseValue', () => {
   it.each([
@@ -20,6 +20,10 @@ describe('parseValue', () => {
     ['1e3', 1000],
     ['1.5e-3', 0.0015],
     ['330 ohm', 330],
+    ['4.7uF', 4.7e-6],
+    ['10mH', 0.01],
+    ['5ms', 0.005],
+    ['2 s', 2],
     ['0', 0],
   ])('%s -> %d', (text, expected) => {
     expect(parseValue(text)).toBeCloseTo(expected, 12)
@@ -47,6 +51,17 @@ describe('formatValue', () => {
   ])('%d %s -> %s', (value, unit, expected) => {
     expect(formatValue(value, unit)).toBe(expected)
   })
+})
+
+describe('formatTick', () => {
+  it.each([
+    [2e-4, 's', '200 µs'],
+    [0.5, 'V', '500 mV'],
+    [1e-3, 's', '1 ms'],
+    [1.5, 'V', '1.5 V'],
+    [-0.01, 'A', '-10 mA'],
+    [0, 'V', '0 V'],
+  ])('%d %s -> %s', (value, unit, expected) => expect(formatTick(value, unit)).toBe(expected))
 })
 
 describe('formatCompact', () => {

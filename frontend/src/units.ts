@@ -20,7 +20,7 @@ const PREFIXES: Record<string, number> = {
 }
 
 /**
- * Parses values like "4.7k", "10 mA", "2.2MΩ", "1e3", "-5V" or "4k7"
+ * Parses values like "4.7k", "10 mA", "2.2MΩ", "4.7uF", "5ms", "1e3", "-5V" or "4k7"
  * (the resistor-code style where the prefix replaces the decimal point).
  * Returns `undefined` for anything it cannot read.
  *
@@ -32,7 +32,7 @@ export function parseValue(text: string): number | undefined {
   // number | optional prefix | optional "4k7"-style digits | optional unit.
   // Case-sensitive on purpose so that "m" (milli) and "M" (mega) differ.
   const match =
-    /^([+-]?(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?)(meg|MEG|Meg|[pnuµmkKMG])?(\d*)(Ω|[oO]hms?|[vV]|[aA])?$/.exec(s)
+    /^([+-]?(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?)(meg|MEG|Meg|[pnuµmkKMG])?(\d*)(Ω|[oO]hms?|[vV]|[aA]|s|F|H)?$/.exec(s)
   if (!match) return undefined
   const [, numberPart = '', rawPrefix, trailingDigits = ''] = match
   const prefix = rawPrefix?.toLowerCase() === 'meg' ? 'meg' : rawPrefix
@@ -71,6 +71,16 @@ export function formatValue(value: number, unit: string, digits = 3): string {
   const magnitude = Math.abs(value)
   const [scale, prefix] = FORMAT_PREFIXES.find(([s]) => magnitude >= s * 0.9995) ?? [1e-12, 'p']
   return `${(value / scale).toPrecision(digits)} ${prefix}${unit}`
+}
+
+/**
+ * Axis tick labels: an SI prefix with no forced trailing digits, so
+ * 0.0002 s reads "200 µs" rather than "2.0e+2 µs" or "200.0 µs".
+ */
+export function formatTick(value: number, unit: string): string {
+  if (Math.abs(value) < 1e-15) return `0 ${unit}`
+  const [scale, prefix] = FORMAT_PREFIXES.find(([s]) => Math.abs(value) >= s * 0.9995) ?? [1e-12, 'p']
+  return `${Number((value / scale).toPrecision(3))} ${prefix}${unit}`
 }
 
 /** A compact form for inputs and labels: 4700 -> "4.7k". */

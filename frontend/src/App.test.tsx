@@ -125,4 +125,56 @@ describe('App', () => {
     await user.keyboard('1')
     expect(screen.getByRole('button', { name: /Resistor/, pressed: true })).toBeTruthy()
   })
+
+  describe('transient mode', () => {
+    it('plots the RC charging curve and reads values at the final time', async () => {
+      const { user } = setup()
+      await user.selectOptions(screen.getByLabelText('Load an example circuit'), 'RC charging')
+      expect(screen.getByRole('button', { name: 'Transient', pressed: true })).toBeTruthy()
+      await user.click(screen.getByRole('button', { name: 'Solve' }))
+
+      expect(screen.getByTestId('step-count').textContent).toContain('1,000 steps')
+      // The capacitor voltage is plotted by default.
+      expect(screen.getByTestId('series-voltage:n2')).toBeTruthy()
+      // Final value 5(1 − e^-5) = 4.97 V.
+      const table = screen.getByRole('table', { name: 'Values at cursor' })
+      expect(table.textContent).toContain('4.97 V')
+      expect(table.textContent).toContain('t = 5.00 ms')
+    })
+
+    it('moves the time cursor with the keyboard', async () => {
+      const { user } = setup()
+      await user.selectOptions(screen.getByLabelText('Load an example circuit'), 'RC charging')
+      await user.click(screen.getByRole('button', { name: 'Solve' }))
+
+      screen.getByRole('img', { name: /Voltage versus time/ }).focus()
+      await user.keyboard('{Home}')
+      expect(screen.getByTestId('chart-crosshair')).toBeTruthy()
+      expect(screen.getByRole('table', { name: 'Values at cursor' }).textContent).toContain('0 V')
+    })
+
+    it('adds a current trace from the signal picker', async () => {
+      const { user } = setup()
+      await user.selectOptions(screen.getByLabelText('Load an example circuit'), 'Series RLC')
+      await user.click(screen.getByRole('button', { name: 'Solve' }))
+
+      expect(screen.getByTestId('series-current:L1')).toBeTruthy()
+      await user.click(screen.getByRole('checkbox', { name: 'R1' }))
+      expect(screen.getByTestId('series-current:R1')).toBeTruthy()
+    })
+
+    it('re-runs when the stop time changes', async () => {
+      const { user } = setup()
+      await user.selectOptions(screen.getByLabelText('Load an example circuit'), 'RC charging')
+      await user.click(screen.getByRole('button', { name: 'Solve' }))
+
+      const stop = screen.getByLabelText('Stop time')
+      await user.clear(stop)
+      await user.type(stop, '1ms{Enter}')
+      expect(screen.getByTestId('step-count').textContent).toContain('200 steps')
+      // 5(1 − e^-1) = 3.16 V at t = τ.
+      expect(screen.getByRole('table', { name: 'Values at cursor' }).textContent).toContain('3.16 V')
+    })
+
+  })
 })

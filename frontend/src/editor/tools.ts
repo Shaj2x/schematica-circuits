@@ -6,6 +6,8 @@ export const TOOLS: { tool: Tool; label: string; key: string }[] = [
   { tool: 'resistor', label: 'Resistor', key: '1' },
   { tool: 'voltage_source', label: 'Voltage source', key: '2' },
   { tool: 'current_source', label: 'Current source', key: '3' },
+  { tool: 'capacitor', label: 'Capacitor', key: '4' },
+  { tool: 'inductor', label: 'Inductor', key: '5' },
   { tool: 'ground', label: 'Ground', key: 'G' },
 ]
 

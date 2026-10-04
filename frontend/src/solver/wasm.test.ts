@@ -70,6 +70,9 @@ describe('WASM solver errors', () => {
     floating_nodes: net([R('R1', 'a', 'gnd'), R('R2', 'x', 'y')]),
     voltage_source_loop: net([V('V1', 'a', 'gnd'), V('V2', 'a', 'gnd'), R('R1', 'a', 'gnd')]),
     // 1e-300 Ω beside 1 Ω exceeds double precision (see tests/errors.rs).
+    // Transient-only kinds: the netlist and options come from transientCases.
+    invalid_analysis: undefined,
+    undefined_initial_state: undefined,
     singular_matrix: net([
       { id: 'I1', type: 'current_source', from: 'gnd', to: 'a', value: 1 },
       R('R1', 'a', 'b', 1e-300),
@@ -77,12 +80,47 @@ describe('WASM solver errors', () => {
     ]),
   }
 
+  // Errors only a transient run can produce.
+  const transientCases: Partial<Record<SolverErrorKind, [Netlist, unknown]>> = {
+    invalid_analysis: [net([R('R1', 'a', 'gnd')]), { stop_time: -1, time_step: 1e-3 }],
+    // An uncharged capacitor directly across a 5 V source.
+    undefined_initial_state: [
+      net([V('V1', 'a', 'gnd'), { id: 'C1', type: 'capacitor', a: 'a', b: 'gnd', value: 1e-6 }]),
+      { stop_time: 1e-3, time_step: 1e-5 },
+    ],
+  }
+
   it.each(Object.entries(cases))('reports %s', (kind, netlist) => {
-    const result = solver.solve(netlist as Netlist)
+    const [transientNetlist, options] = transientCases[kind as SolverErrorKind] ?? []
+    const result = transientNetlist
+      ? solver.solveTransient(transientNetlist, options as never)
+      : solver.solve(netlist as Netlist)
     expect(result.ok).toBe(false)
     if (result.ok) return
     expect(result.error.kind).toBe(kind)
     expect(result.error.message.length).toBeGreaterThan(0)
+  })
+
+  it('nests the cause of an undefined initial state', () => {
+    const [netlist, options] = transientCases.undefined_initial_state!
+    expect(solver.solveTransient(netlist, options as never)).toMatchObject({
+      ok: false,
+      error: { kind: 'undefined_initial_state', cause: { kind: 'voltage_source_loop', id: 'C1' } },
+    })
+  })
+
+  it('runs a transient analysis', () => {
+    // RC discharge from 1 V with τ = 1 ms, checked at t = τ.
+    const result = solver.solveTransient(
+      net([
+        { id: 'C1', type: 'capacitor', a: 'a', b: 'gnd', value: 1e-6, initial_voltage: 1 },
+        R('R1', 'a', 'gnd', 1000),
+      ]),
+      { stop_time: 1e-3, time_step: 1e-6 },
+    )
+    if (!result.ok) throw new Error(result.error.message)
+    expect(result.solution.time).toHaveLength(1001)
+    expect(result.solution.node_voltages.a!.at(-1)).toBeCloseTo(Math.exp(-1), 6)
   })
 
   it('carries structured details for highlighting', () => {

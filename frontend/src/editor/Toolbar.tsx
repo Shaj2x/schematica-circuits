@@ -9,11 +9,13 @@ interface ToolbarProps {
   dispatch: Dispatch<EditorAction>
   live: boolean
   onToggleLive: () => void
+  mode: 'dc' | 'transient'
+  onMode: (mode: 'dc' | 'transient') => void
   onLoadExample: (example: Example) => void
   onClear: () => void
 }
 
-export function Toolbar({ tool, dispatch, live, onToggleLive, onLoadExample, onClear }: ToolbarProps) {
+export function Toolbar({ tool, dispatch, live, onToggleLive, mode, onMode, onLoadExample, onClear }: ToolbarProps) {
   return (
     <div className="flex flex-wrap items-center gap-2">
       <div role="toolbar" aria-label="Tools" className="flex flex-wrap gap-1 rounded-lg bg-slate-100 p-1">
@@ -66,11 +68,32 @@ export function Toolbar({ tool, dispatch, live, onToggleLive, onLoadExample, onC
         Clear
       </button>
 
+      <div role="group" aria-label="Analysis" className="ml-auto flex rounded-lg bg-slate-100 p-1">
+        {(
+          [
+            ['dc', 'DC'],
+            ['transient', 'Transient'],
+          ] as const
+        ).map(([value, label]) => (
+          <button
+            key={value}
+            type="button"
+            aria-pressed={mode === value}
+            onClick={() => onMode(value)}
+            className={`rounded-md px-2.5 py-1 text-sm ${
+              mode === value ? 'bg-white text-sky-700 shadow-sm' : 'text-slate-600 hover:text-slate-900'
+            }`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
       <button
         type="button"
         onClick={onToggleLive}
         aria-pressed={live}
-        className={`ml-auto rounded-md px-4 py-1.5 text-sm font-semibold shadow-sm transition-colors ${
+        className={`rounded-md px-4 py-1.5 text-sm font-semibold shadow-sm transition-colors ${
           live ? 'bg-emerald-600 text-white hover:bg-emerald-700' : 'bg-sky-600 text-white hover:bg-sky-700'
         }`}
       >

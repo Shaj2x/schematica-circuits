@@ -39,10 +39,14 @@ export function Inspector({ schematic, selectedId, dispatch, connectivity, solut
     <section aria-label="Help" className="space-y-2 text-sm text-slate-600">
       <h2 className="font-semibold text-slate-800">Build a circuit</h2>
       <ul className="list-disc space-y-1 pl-5">
-        <li>Pick a part (1, 2, 3) and click the grid to place it. R rotates.</li>
+        <li>Pick a part (1–5: R, V, I, C, L) and click the grid to place it. R rotates.</li>
         <li>Wire tool (W): click point to point. Esc, or clicking the last point again, ends the wire.</li>
         <li>Add a ground (G). Every circuit needs one.</li>
         <li>Press <b>Solve</b>, then hover wires and parts to read voltages and currents.</li>
+        <li>
+          Switch to <b>Transient</b> to watch capacitors and inductors over time. Hover the plot to move the time
+          cursor; the circuit readouts follow it.
+        </li>
         <li>Select a part to edit its value; the slider re-solves as you drag.</li>
       </ul>
     </section>
@@ -173,6 +177,10 @@ function PartInspector({
         </dl>
       )}
 
+      {(part.kind === 'capacitor' || part.kind === 'inductor') && (
+        <InitialCondition part={part} dispatch={dispatch} />
+      )}
+
       <div className="flex flex-wrap gap-2">
         <button
           type="button"
@@ -203,5 +211,48 @@ function DeleteButton({ dispatch }: { dispatch: Dispatch<EditorAction> }) {
     >
       Delete
     </button>
+  )
+}
+
+/**
+ * The starting state for a transient run: a capacitor's voltage or an
+ * inductor's current at t = 0. DC analysis ignores it.
+ */
+function InitialCondition({ part, dispatch }: { part: Part; dispatch: Dispatch<EditorAction> }) {
+  const isCapacitor = part.kind === 'capacitor'
+  const [text, setText] = useState(formatCompact(part.initial ?? 0))
+  const [invalid, setInvalid] = useState(false)
+  const commit = () => {
+    const value = parseValue(text)
+    setInvalid(value === undefined)
+    if (value !== undefined) {
+      dispatch({ type: 'setInitial', id: part.id, value })
+      setText(formatCompact(value))
+    }
+  }
+  return (
+    <div className="space-y-1">
+      <label htmlFor="part-initial" className="text-sm text-slate-600">
+        {isCapacitor ? 'Initial voltage (V)' : 'Initial current (A)'}
+      </label>
+      <input
+        id="part-initial"
+        value={text}
+        onChange={(e) => {
+          setText(e.target.value)
+          setInvalid(false)
+        }}
+        onBlur={commit}
+        onKeyDown={(e) => e.key === 'Enter' && commit()}
+        aria-invalid={invalid}
+        className={`w-full rounded-md border px-2.5 py-1.5 font-mono text-sm ${
+          invalid ? 'border-red-500 bg-red-50' : 'border-slate-300'
+        }`}
+      />
+      <p className="text-xs text-slate-400">
+        {isCapacitor ? 'v(first terminal) − v(second) at t = 0.' : 'From the first terminal to the second at t = 0.'}{' '}
+        Used by transient analysis only.
+      </p>
+    </div>
   )
 }
