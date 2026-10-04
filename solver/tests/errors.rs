@@ -15,7 +15,7 @@ fn circuit(components: serde_json::Value) -> serde_json::Value {
 fn malformed_json_is_a_parse_error() {
     assert!(matches!(
         solve_json("{ not json"),
-        Err(SolverError::Parse(_))
+        Err(SolverError::Parse { .. })
     ));
 }
 
@@ -25,7 +25,7 @@ fn unknown_component_type_is_a_parse_error() {
         { "id": "D1", "type": "diode", "a": "x", "b": "gnd", "value": 0.7 }
     ])))
     .unwrap_err();
-    assert!(matches!(err, SolverError::Parse(msg) if msg.contains("diode")));
+    assert!(matches!(err, SolverError::Parse { message } if message.contains("diode")));
 }
 
 #[test]
@@ -34,7 +34,7 @@ fn missing_terminal_field_is_a_parse_error() {
         { "id": "R1", "type": "resistor", "a": "x", "value": 100 }
     ])))
     .unwrap_err();
-    assert!(matches!(err, SolverError::Parse(msg) if msg.contains("`b`")));
+    assert!(matches!(err, SolverError::Parse { message } if message.contains("`b`")));
 }
 
 #[test]
@@ -64,7 +64,12 @@ fn missing_ground() {
         { "id": "R1", "type": "resistor", "a": "a", "b": "b", "value": 100 }
     ])))
     .unwrap_err();
-    assert_eq!(err, SolverError::MissingGround("gnd".into()));
+    assert_eq!(
+        err,
+        SolverError::MissingGround {
+            ground: "gnd".into()
+        }
+    );
 }
 
 #[test]
@@ -165,7 +170,7 @@ fn duplicate_ids() {
         { "id": "R1", "type": "resistor", "a": "a", "b": "gnd", "value": 200 }
     ])))
     .unwrap_err();
-    assert_eq!(err, SolverError::DuplicateId("R1".into()));
+    assert_eq!(err, SolverError::DuplicateId { id: "R1".into() });
 }
 
 #[test]
@@ -242,5 +247,21 @@ fn error_messages_name_the_problem() {
     assert_eq!(
         err.to_string(),
         "node(s) x, y have no path to ground through resistors or voltage sources, so their voltage is undefined"
+    );
+}
+
+#[test]
+fn errors_serialize_with_a_kind_tag() {
+    let err = SolverError::FloatingNodes {
+        nodes: vec!["x".into()],
+    };
+    assert_eq!(
+        serde_json::to_value(&err).unwrap(),
+        json!({ "kind": "floating_nodes", "nodes": ["x"] })
+    );
+    let err = SolverError::SingularMatrix;
+    assert_eq!(
+        serde_json::to_value(&err).unwrap(),
+        json!({ "kind": "singular_matrix" })
     );
 }

@@ -1,3 +1,9 @@
 [workspace]
 resolver = "3"
-members = ["solver"]
+members = ["solver", "solver-wasm"]
+
+# Small, fast WebAssembly: the bundle is downloaded by every visitor.
+[profile.release]
+opt-level = "s"
+lto = true
+codegen-units = 1

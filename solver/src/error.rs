@@ -1,3 +1,4 @@
+use serde::Serialize;
 use thiserror::Error;
 
 /// Everything that can go wrong between receiving a netlist and returning a
@@ -8,10 +9,17 @@ use thiserror::Error;
 /// message naming the offending nodes or components instead of a bare
 /// "singular matrix". [`SolverError::SingularMatrix`] is only the fallback for
 /// numerically degenerate input the graph checks cannot see.
-#[derive(Debug, Clone, PartialEq, Error)]
+///
+/// Errors serialize as JSON tagged by `kind` (for example
+/// `{"kind": "floating_nodes", "nodes": ["x"]}`), so the editor can
+/// highlight the offending nodes or components rather than only show text.
+/// Every variant has named fields because serde's internally tagged format
+/// cannot represent tuple variants.
+#[derive(Debug, Clone, PartialEq, Error, Serialize)]
+#[serde(tag = "kind", rename_all = "snake_case")]
 pub enum SolverError {
-    #[error("invalid netlist JSON: {0}")]
-    Parse(String),
+    #[error("invalid netlist JSON: {message}")]
+    Parse { message: String },
 
     #[error("unsupported netlist version {found} (this solver supports version {supported})")]
     UnsupportedVersion { found: u32, supported: u32 },
@@ -25,8 +33,8 @@ pub enum SolverError {
     #[error("component \"{id}\" has a terminal with an empty node name")]
     EmptyNodeName { id: String },
 
-    #[error("more than one component has the id \"{0}\"")]
-    DuplicateId(String),
+    #[error("more than one component has the id \"{id}\"")]
+    DuplicateId { id: String },
 
     #[error("component \"{id}\": {reason}")]
     InvalidValue { id: String, reason: String },
@@ -37,8 +45,8 @@ pub enum SolverError {
     #[error("component \"{id}\" has both terminals on node \"{node}\", so it is shorted out")]
     ShortedComponent { id: String, node: String },
 
-    #[error("the ground node \"{0}\" is not connected to any component")]
-    MissingGround(String),
+    #[error("the ground node \"{ground}\" is not connected to any component")]
+    MissingGround { ground: String },
 
     /// Nodes with no path to ground through resistors or voltage sources.
     /// Current sources do not count: they fix a current, not a voltage, so a

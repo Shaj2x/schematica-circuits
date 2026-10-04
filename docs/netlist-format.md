@@ -89,6 +89,12 @@ The solver rejects netlists it cannot solve, with a specific reason:
 | `VoltageSourceLoop` | Voltage sources forming a closed loop (includes two in parallel) |
 | `SingularMatrix` | Numerically degenerate input the structural checks cannot see |
 
+Errors serialize as JSON tagged by `kind` (snake_case) with the variant's
+fields, so a client can highlight what is wrong, for example
+`{"kind": "floating_nodes", "nodes": ["x", "y"]}` or
+`{"kind": "voltage_source_loop", "id": "V2"}`. The WebAssembly wrapper adds a
+human-readable `message` and returns `{"ok": false, "error": {...}}`.
+
 ## Example netlists
 
 `solver/tests/fixtures/*.json` holds 13 textbook circuits, each wrapping a
