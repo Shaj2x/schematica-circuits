@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { testSolver } from '../test/solver'
-import { examples, mixedSources, voltageDivider, wheatstoneBridge } from './examples'
+import { examples, mixedSources, rcCharging, seriesRlc, voltageDivider, wheatstoneBridge } from './examples'
 import { type Schematic, emptySchematic, pointKey } from './model'
 import { GROUND_NODE, buildNetlist } from './netlist'
 
@@ -82,6 +82,20 @@ describe('buildNetlist connection rules', () => {
     expect(i).toEqual({ id: 'I1', type: 'current_source', from: 'gnd', to: 'n1', value: 1 })
   })
 
+  it('maps capacitors and inductors with their initial conditions', () => {
+    const s: Schematic = {
+      parts: [
+        { id: 'C1', kind: 'capacitor', a: p(0, 0), b: p(0, 2), value: 1e-6, initial: 3 },
+        { id: 'L1', kind: 'inductor', a: p(0, 0), b: p(2, 0), value: 1e-3 },
+      ],
+      wires: [{ id: 'W1', a: p(0, 2), b: p(2, 0) }],
+      grounds: [{ id: 'G1', at: p(0, 2) }],
+    }
+    const [c, l] = buildNetlist(s).netlist.components
+    expect(c).toEqual({ id: 'C1', type: 'capacitor', a: 'n1', b: 'gnd', value: 1e-6, initial_voltage: 3 })
+    expect(l).toEqual({ id: 'L1', type: 'inductor', a: 'n1', b: 'gnd', value: 1e-3, initial_current: 0 })
+  })
+
   it('names nodes in reading order', () => {
     const { netlist } = buildNetlist(voltageDivider.schematic)
     expect(netlist.components.map((c) => c.id)).toEqual(['V1', 'R1', 'R2'])
@@ -135,6 +149,33 @@ describe('examples solve to their hand-derived answers', () => {
     const { v, currents } = solve(mixedSources.schematic)
     expect(v(6, 4)).toBeCloseTo(9.6, 9)
     expect(currents.V1).toBeCloseTo(-0.6, 12)
+  })
+
+  const runTransient = (example: typeof rcCharging) => {
+    const connectivity = buildNetlist(example.schematic)
+    const { stopTime, timeStep, method } = example.transient!
+    const result = testSolver().solveTransient(connectivity.netlist, { stop_time: stopTime, time_step: timeStep, method })
+    if (!result.ok) throw new Error(result.error.message)
+    const series = (x: number, y: number) =>
+      result.solution.node_voltages[connectivity.nodeOfPoint.get(pointKey(p(x, y)))!]!
+    return { time: result.solution.time, series }
+  }
+
+  it('RC charging follows 5(1 − e^(−t/τ))', () => {
+    const { time, series } = runTransient(rcCharging)
+    const v = series(8, 4)
+    // At t = τ = 1 ms (sample 200 of a 5 µs step).
+    expect(time[200]).toBeCloseTo(1e-3, 12)
+    expect(v[200]).toBeCloseTo(5 * (1 - Math.exp(-1)), 4)
+    expect(v.at(-1)).toBeCloseTo(5 * (1 - Math.exp(-5)), 4)
+  })
+
+  it('series RLC overshoots by e^(−απ/ωd)', () => {
+    const { series } = runTransient(seriesRlc)
+    const alpha = 5000
+    const wd = Math.sqrt(1e9 - alpha ** 2)
+    const peak = Math.max(...series(9, 4))
+    expect(peak).toBeCloseTo(1 + Math.exp((-alpha * Math.PI) / wd), 2)
   })
 
   it('every example solves', () => {

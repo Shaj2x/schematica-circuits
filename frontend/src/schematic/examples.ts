@@ -4,6 +4,7 @@
  * checks the editor -> netlist -> WASM path reproduces those answers.
  */
 
+import type { TransientSettings } from '../editor/transient'
 import type { Part, Point, Schematic, Wire } from './model'
 
 const p = (x: number, y: number): Point => ({ x, y })
@@ -18,6 +19,8 @@ export interface Example {
   name: string
   description: string
   schematic: Schematic
+  /** Present for circuits meant to be watched over time; loading one opens transient mode. */
+  transient?: TransientSettings
 }
 
 export const voltageDivider: Example = {
@@ -76,4 +79,36 @@ export const mixedSources: Example = {
   },
 }
 
-export const examples: Example[] = [voltageDivider, wheatstoneBridge, mixedSources]
+export const rcCharging: Example = {
+  name: 'RC charging',
+  description: '5 V into 1 kΩ and 1 µF (τ = 1 ms): v_C = 5(1 − e^(−t/τ)), 63% of the way after one τ.',
+  schematic: {
+    parts: [
+      { id: 'V1', kind: 'voltage_source', a: p(2, 4), b: p(2, 6), value: 5 },
+      R('R1', p(4, 2), p(6, 2), 1000),
+      { id: 'C1', kind: 'capacitor', a: p(8, 4), b: p(8, 6), value: 1e-6 },
+    ],
+    wires: wires([2, 4, 2, 2], [2, 2, 4, 2], [6, 2, 8, 2], [8, 2, 8, 4], [8, 6, 8, 8], [2, 6, 2, 8], [2, 8, 8, 8]),
+    grounds: [{ id: 'G1', at: p(5, 8) }],
+  },
+  transient: { stopTime: 5e-3, timeStep: 5e-6, method: 'trapezoidal' },
+}
+
+export const seriesRlc: Example = {
+  name: 'Series RLC',
+  description:
+    '1 V step into 10 Ω, 1 mH and 1 µF: underdamped (α = 5000 /s, ωd ≈ 31.2 krad/s), so the capacitor voltage rings and overshoots by about 60%.',
+  schematic: {
+    parts: [
+      { id: 'V1', kind: 'voltage_source', a: p(2, 4), b: p(2, 6), value: 1 },
+      R('R1', p(3, 2), p(5, 2), 10),
+      { id: 'L1', kind: 'inductor', a: p(5, 2), b: p(7, 2), value: 1e-3 },
+      { id: 'C1', kind: 'capacitor', a: p(9, 4), b: p(9, 6), value: 1e-6 },
+    ],
+    wires: wires([2, 4, 2, 2], [2, 2, 3, 2], [7, 2, 9, 2], [9, 2, 9, 4], [9, 6, 9, 8], [2, 6, 2, 8], [2, 8, 9, 8]),
+    grounds: [{ id: 'G1', at: p(5, 8) }],
+  },
+  transient: { stopTime: 1e-3, timeStep: 1e-6, method: 'trapezoidal' },
+}
+
+export const examples: Example[] = [voltageDivider, wheatstoneBridge, mixedSources, rcCharging, seriesRlc]

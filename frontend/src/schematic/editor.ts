@@ -31,6 +31,7 @@ export type EditorAction =
   | { type: 'select'; id: string | undefined }
   | { type: 'deleteSelected' }
   | { type: 'setValue'; id: string; value: number }
+  | { type: 'setInitial'; id: string; value: number }
   | { type: 'flip'; id: string }
   | { type: 'cancel' }
   | { type: 'load'; schematic: Schematic }
@@ -80,6 +81,9 @@ export function editorReducer(state: EditorState, action: EditorAction): EditorS
 
     case 'setValue':
       return updateParts(state, action.id, { value: action.value })
+
+    case 'setInitial':
+      return updateParts(state, action.id, { initial: action.value })
 
     case 'flip': {
       const part = state.schematic.parts.find((p) => p.id === action.id)

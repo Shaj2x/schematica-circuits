@@ -246,7 +246,7 @@ fn error_messages_name_the_problem() {
     };
     assert_eq!(
         err.to_string(),
-        "node(s) x, y have no path to ground through resistors or voltage sources, so their voltage is undefined"
+        "node(s) x, y have no path to ground that fixes their voltage (current sources never do, and capacitors don't at DC), so their voltage is undefined"
     );
 }
 

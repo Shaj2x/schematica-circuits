@@ -8,12 +8,14 @@
  * the real WASM module, so drift between the two sides fails a test.
  */
 
-export type ComponentKind = 'resistor' | 'voltage_source' | 'current_source'
+export type ComponentKind = 'resistor' | 'voltage_source' | 'current_source' | 'capacitor' | 'inductor'
 
 export type Component =
   | { id: string; type: 'resistor'; a: string; b: string; value: number }
   | { id: string; type: 'voltage_source'; pos: string; neg: string; value: number }
   | { id: string; type: 'current_source'; from: string; to: string; value: number }
+  | { id: string; type: 'capacitor'; a: string; b: string; value: number; initial_voltage?: number }
+  | { id: string; type: 'inductor'; a: string; b: string; value: number; initial_current?: number }
 
 export interface Netlist {
   version: 1
@@ -33,8 +35,10 @@ interface ErrorBase {
   message: string
 }
 
-export type SolverError = ErrorBase &
-  (
+export type SolverError = ErrorBase & SolverErrorDetail
+
+/** The variant-specific part of an error; nested causes carry no message. */
+export type SolverErrorDetail =
     | { kind: 'parse' }
     | { kind: 'unsupported_version'; found: number; supported: number }
     | { kind: 'empty_circuit' }
@@ -47,8 +51,28 @@ export type SolverError = ErrorBase &
     | { kind: 'floating_nodes'; nodes: string[] }
     | { kind: 'voltage_source_loop'; id: string }
     | { kind: 'singular_matrix' }
-  )
+    | { kind: 'invalid_analysis'; reason: string }
+    | { kind: 'undefined_initial_state'; cause: SolverErrorDetail }
 
 export type SolverErrorKind = SolverError['kind']
 
 export type SolveResult = { ok: true; solution: Solution } | { ok: false; error: SolverError }
+
+export type Integration = 'trapezoidal' | 'backward_euler'
+
+export interface TransientOptions {
+  /** Seconds. */
+  stop_time: number
+  /** Seconds; adjusted so a whole number of steps ends at `stop_time`. */
+  time_step: number
+  method?: Integration
+}
+
+/** Column-oriented: one time axis, one array per signal. */
+export interface TransientSolution {
+  time: number[]
+  node_voltages: Record<string, number[]>
+  branch_currents: Record<string, number[]>
+}
+
+export type TransientResult = { ok: true; solution: TransientSolution } | { ok: false; error: SolverError }

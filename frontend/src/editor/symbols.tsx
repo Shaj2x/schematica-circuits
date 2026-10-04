@@ -25,6 +25,12 @@ export function PartBody({ kind }: { kind: ComponentKind }) {
           <circle cx={40} cy={0} r={18} fill="var(--canvas-bg)" />
         </>
       )
+    case 'capacitor':
+      // Two plates 8 px apart across the middle.
+      return <path d="M0 0 H36 M36 -13 V13 M44 -13 V13 M44 0 H80" fill="none" />
+    case 'inductor':
+      // Four half-turn coils across the middle 48 px.
+      return <path d="M0 0 H16 a6 6 0 0 1 12 0 a6 6 0 0 1 12 0 a6 6 0 0 1 12 0 a6 6 0 0 1 12 0 H80" fill="none" />
     case 'current_source':
       // The arrow points from the "from" terminal (a) to the "to" terminal (b).
       return (

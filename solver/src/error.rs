@@ -48,23 +48,39 @@ pub enum SolverError {
     #[error("the ground node \"{ground}\" is not connected to any component")]
     MissingGround { ground: String },
 
-    /// Nodes with no path to ground through resistors or voltage sources.
-    /// Current sources do not count: they fix a current, not a voltage, so a
-    /// node reached only through them has no defined potential. This also
-    /// covers current sources in series.
+    /// Nodes with no path to ground through elements that fix a voltage
+    /// difference (resistors, voltage sources, and in transient analysis
+    /// capacitors and inductors). Current sources never count: they fix a
+    /// current, not a voltage, so a node reached only through them has no
+    /// defined potential. This also covers current sources in series, and,
+    /// at DC, nodes reached only through capacitors (open circuits).
     #[error(
-        "node(s) {} have no path to ground through resistors or voltage sources, so their voltage is undefined",
+        "node(s) {} have no path to ground that fixes their voltage (current sources never do, and capacitors don't at DC), so their voltage is undefined",
         .nodes.join(", ")
     )]
     FloatingNodes { nodes: Vec<String> },
 
-    /// A set of voltage sources forming a closed loop (including two sources
-    /// in parallel). Their values either contradict each other or leave the
-    /// loop current undefined.
+    /// A closed loop made only of elements that force a voltage: voltage
+    /// sources, plus inductors at DC (0 V shorts) and capacitors at t = 0
+    /// (sources of their initial voltage). Their values either contradict
+    /// each other or leave the loop current undefined. Two sources in
+    /// parallel is the smallest case.
     #[error(
-        "voltage source \"{id}\" closes a loop made only of voltage sources, so the loop current is undefined"
+        "\"{id}\" closes a loop made only of voltage sources (at DC an inductor counts as a 0 V source), so the loop current is undefined"
     )]
     VoltageSourceLoop { id: String },
+
+    /// Transient settings that cannot be simulated.
+    #[error("invalid transient settings: {reason}")]
+    InvalidAnalysis { reason: String },
+
+    /// The circuit at t = 0, with every capacitor held at its initial voltage
+    /// and every inductor carrying its initial current, has no unique
+    /// solution. Typically a capacitor sits directly across a voltage source
+    /// (it would charge through zero resistance), or a node is reached only
+    /// through inductors. `cause` says which elements or nodes.
+    #[error("the circuit's state at t = 0 is undefined: {cause}")]
+    UndefinedInitialState { cause: Box<SolverError> },
 
     #[error("the circuit equations are singular or too ill-conditioned to solve")]
     SingularMatrix,

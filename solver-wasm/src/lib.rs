@@ -12,6 +12,7 @@
 //! TypeScript side can handle them with an ordinary discriminated union
 //! instead of try/catch around every call.
 
+use serde::Serialize;
 use serde_json::{Value, json};
 use wasm_bindgen::prelude::*;
 
@@ -26,13 +27,28 @@ pub fn solve(netlist_json: &str) -> String {
     envelope(schematica_solver::solve_json(netlist_json)).to_string()
 }
 
+/// Runs a transient analysis. `options_json` is
+/// `{"stop_time": s, "time_step": s, "method": "trapezoidal" | "backward_euler"}`.
+///
+/// Returns the same envelope as [`solve`], with a column-oriented
+/// `{"time": [...], "node_voltages": {...}, "branch_currents": {...}}` as the
+/// solution.
+#[wasm_bindgen(js_name = solveTransient)]
+pub fn solve_transient(netlist_json: &str, options_json: &str) -> String {
+    envelope(schematica_solver::solve_transient_json(
+        netlist_json,
+        options_json,
+    ))
+    .to_string()
+}
+
 /// The netlist format version this build understands.
 #[wasm_bindgen(js_name = netlistVersion)]
 pub fn netlist_version() -> u32 {
     schematica_solver::NETLIST_VERSION
 }
 
-fn envelope(result: Result<schematica_solver::Solution, schematica_solver::SolverError>) -> Value {
+fn envelope<T: Serialize>(result: Result<T, schematica_solver::SolverError>) -> Value {
     match result {
         Ok(solution) => json!({ "ok": true, "solution": solution }),
         Err(error) => {
@@ -83,6 +99,28 @@ mod tests {
                 .unwrap()
                 .contains("no path to ground")
         );
+    }
+
+    #[test]
+    fn transient_envelope() {
+        let netlist = json!({
+            "version": 1, "ground": "gnd",
+            "components": [
+                { "id": "C1", "type": "capacitor", "a": "a", "b": "gnd", "value": 1e-6, "initial_voltage": 1 },
+                { "id": "R1", "type": "resistor", "a": "a", "b": "gnd", "value": 1000 }
+            ]
+        });
+        let options = json!({ "stop_time": 1e-3, "time_step": 1e-4 });
+        let out: Value =
+            serde_json::from_str(&solve_transient(&netlist.to_string(), &options.to_string()))
+                .unwrap();
+        assert_eq!(out["ok"], true);
+        assert_eq!(out["solution"]["time"].as_array().unwrap().len(), 11);
+        assert_eq!(out["solution"]["node_voltages"]["a"][0], 1.0);
+
+        let bad: Value =
+            serde_json::from_str(&solve_transient(&netlist.to_string(), "{}")).unwrap();
+        assert_eq!(bad["error"]["kind"], "invalid_analysis");
     }
 
     #[test]

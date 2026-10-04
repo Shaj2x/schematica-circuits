@@ -80,6 +80,15 @@ describe('editorReducer', () => {
     expect(s.selectedId).toBeUndefined()
   })
 
+  it('sets a capacitor’s initial voltage', () => {
+    const s = run([
+      { type: 'setTool', tool: 'capacitor' },
+      { type: 'clickPoint', point: p(0, 0) },
+      { type: 'setInitial', id: 'C1', value: 2.5 },
+    ])
+    expect(s.schematic.parts[0]).toMatchObject({ id: 'C1', kind: 'capacitor', value: 1e-6, initial: 2.5 })
+  })
+
   it('deletes selected wires and grounds too', () => {
     const s = run(
       [{ type: 'select', id: 'W1' }, { type: 'deleteSelected' }, { type: 'select', id: 'G1' }, { type: 'deleteSelected' }],

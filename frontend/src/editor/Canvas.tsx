@@ -2,6 +2,7 @@ import { type Dispatch, type PointerEvent, useRef, useState } from 'react'
 import type { EditorAction, EditorState } from '../schematic/editor'
 import { KINDS, PART_LENGTH, type Point, pointKey } from '../schematic/model'
 import { formatValue } from '../units'
+import type { Solution } from '../solver'
 import type { Diagnosis } from './diagnose'
 import { GRID, axes, partTransform, px } from './geometry'
 import { CurrentArrow, GroundSymbol, PartBody, PolarityMarks } from './symbols'
@@ -18,16 +19,17 @@ interface CanvasProps {
   dispatch: Dispatch<EditorAction>
   simulation: Simulation
   diagnosis?: Diagnosis
+  /** Values to show on hover: the DC solution, or one transient sample. */
+  solution?: Solution
   hover?: Hover
   onHover: (hover: Hover | undefined) => void
 }
 
-export function Canvas({ state, dispatch, simulation, diagnosis, hover, onHover }: CanvasProps) {
+export function Canvas({ state, dispatch, simulation, diagnosis, solution, hover, onHover }: CanvasProps) {
   const svgRef = useRef<SVGSVGElement>(null)
   const [cursor, setCursor] = useState<Point>()
   const { schematic, tool, selectedId, wireStart } = state
-  const { connectivity, result } = simulation
-  const solution = result?.ok ? result.solution : undefined
+  const { connectivity } = simulation
 
   /** Client (screen) coordinates -> nearest grid point, or undefined off-grid. */
   function toGrid(event: PointerEvent | React.MouseEvent): Point | undefined {
