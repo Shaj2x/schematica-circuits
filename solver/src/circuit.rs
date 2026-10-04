@@ -72,7 +72,9 @@ impl Circuit {
             t1 == ground || t2 == ground
         });
         if !touches_ground {
-            return Err(SolverError::MissingGround(ground.to_string()));
+            return Err(SolverError::MissingGround {
+                ground: ground.to_string(),
+            });
         }
 
         // Intern node names in order of first appearance, so node numbering
@@ -204,7 +206,7 @@ fn check_components(components: &[Component]) -> Result<(), SolverError> {
             return Err(SolverError::EmptyId);
         }
         if !seen_ids.insert(id) {
-            return Err(SolverError::DuplicateId(id.to_string()));
+            return Err(SolverError::DuplicateId { id: id.to_string() });
         }
         let (t1, t2) = c.terminals();
         if t1.is_empty() || t2.is_empty() {

@@ -45,7 +45,9 @@ pub fn solve(netlist: &Netlist) -> Result<Solution, SolverError> {
 
 /// Parses a netlist from JSON without solving it.
 pub fn parse_netlist(json: &str) -> Result<Netlist, SolverError> {
-    serde_json::from_str(json).map_err(|e| SolverError::Parse(e.to_string()))
+    serde_json::from_str(json).map_err(|e| SolverError::Parse {
+        message: e.to_string(),
+    })
 }
 
 /// Parses a JSON netlist and solves it.
