@@ -3,6 +3,7 @@ name = "schematica-solver"
 version = "0.1.0"
 edition = "2024"
 description = "DC circuit solver using Modified Nodal Analysis"
+license = "MIT"
 
 [dependencies]
 serde = { version = "1.0.229", features = ["derive"] }

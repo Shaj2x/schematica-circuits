@@ -62,3 +62,7 @@ checked against the same hand-derived answers.
 - [Netlist format](docs/netlist-format.md): the JSON contract shared by every component
 - [Solver design](docs/solver.md): how MNA works here and why it is built this way
 - [Frontend design](docs/frontend.md): schematic → netlist, the editor reducer, live solving
+
+## License
+
+[MIT](LICENSE)
