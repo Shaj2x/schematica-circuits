@@ -1,14 +1,16 @@
 //! # schematica-solver
 //!
-//! A DC circuit solver using Modified Nodal Analysis (MNA), supporting
-//! resistors and independent voltage and current sources.
+//! A circuit solver using Modified Nodal Analysis (MNA): DC operating point
+//! and transient (time-domain) analysis of resistors, capacitors, inductors
+//! and independent voltage and current sources.
 //!
 //! The pipeline has three stages, each in its own module:
 //!
 //! 1. [`netlist`]: the JSON contract (serde types for input and output).
-//! 2. `circuit`: validation and compilation to integer node indices, including
-//!    the graph checks that turn "singular matrix" into a useful message.
-//! 3. `mna` + `linalg`: assemble the MNA system and solve it with LU.
+//! 2. `circuit`: validation and compilation to integer node indices.
+//! 3. `dc` and `transient`: each analysis turns elements into linear stamps.
+//! 4. `mna` + `linalg`: graph checks on those stamps (which turn "singular
+//!    matrix" into a useful message), assembly, and LU solve.
 //!
 //! ```
 //! let json = r#"{
@@ -29,18 +31,22 @@
 //! the same solver.
 
 mod circuit;
+mod dc;
 pub mod error;
+mod graph;
 mod linalg;
 mod mna;
 pub mod netlist;
 
 pub use error::SolverError;
-pub use netlist::{Component, NETLIST_VERSION, Netlist, Solution};
+pub use netlist::{
+    Component, Integration, NETLIST_VERSION, Netlist, Solution, TransientOptions, TransientSolution,
+};
 
 /// Validates and solves a netlist.
 pub fn solve(netlist: &Netlist) -> Result<Solution, SolverError> {
     let circuit = circuit::Circuit::compile(netlist)?;
-    mna::solve(&circuit)
+    dc::solve(&circuit)
 }
 
 /// Parses a netlist from JSON without solving it.
