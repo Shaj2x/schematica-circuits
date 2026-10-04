@@ -23,6 +23,17 @@ function wrap(): Solver {
   }
 }
 
+/**
+ * Solves and measures wall-clock time, including the JSON round trip across
+ * the WASM boundary. The editor shows this number, and the Phase 6 benchmarks
+ * use it.
+ */
+export function solveTimed(solver: Solver, netlist: Netlist): { result: SolveResult; ms: number } {
+  const start = performance.now()
+  const result = solver.solve(netlist)
+  return { result, ms: performance.now() - start }
+}
+
 let loading: Promise<Solver> | undefined
 
 /**
