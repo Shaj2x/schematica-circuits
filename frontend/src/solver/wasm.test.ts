@@ -1,14 +1,9 @@
 import { readFileSync, readdirSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { beforeAll, describe, expect, it } from 'vitest'
-import { createSolverSync, type Solver } from '.'
+import { testSolver } from '../test/solver'
+import type { Solver } from '.'
 import type { Netlist, Solution, SolverErrorKind } from './types'
-
-/** Loads a WebAssembly solver for tests, without the network. */
-export function testSolver(): Solver {
-  const wasm = readFileSync(new URL('./pkg/schematica_solver_wasm_bg.wasm', import.meta.url))
-  return createSolverSync(wasm)
-}
 
 interface Fixture {
   name: string
