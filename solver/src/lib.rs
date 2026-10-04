@@ -37,16 +37,28 @@ mod graph;
 mod linalg;
 mod mna;
 pub mod netlist;
+mod transient;
 
 pub use error::SolverError;
 pub use netlist::{
     Component, Integration, NETLIST_VERSION, Netlist, Solution, TransientOptions, TransientSolution,
 };
+pub use transient::MAX_STEPS;
 
 /// Validates and solves a netlist.
 pub fn solve(netlist: &Netlist) -> Result<Solution, SolverError> {
     let circuit = circuit::Circuit::compile(netlist)?;
     dc::solve(&circuit)
+}
+
+/// Validates a netlist and simulates it over time, starting from the
+/// components' initial conditions.
+pub fn solve_transient(
+    netlist: &Netlist,
+    options: &TransientOptions,
+) -> Result<TransientSolution, SolverError> {
+    let circuit = circuit::Circuit::compile(netlist)?;
+    transient::solve(&circuit, options)
 }
 
 /// Parses a netlist from JSON without solving it.
@@ -59,4 +71,16 @@ pub fn parse_netlist(json: &str) -> Result<Netlist, SolverError> {
 /// Parses a JSON netlist and solves it.
 pub fn solve_json(json: &str) -> Result<Solution, SolverError> {
     solve(&parse_netlist(json)?)
+}
+
+/// Parses a JSON netlist and JSON transient options, and simulates.
+pub fn solve_transient_json(
+    netlist_json: &str,
+    options_json: &str,
+) -> Result<TransientSolution, SolverError> {
+    let options: TransientOptions =
+        serde_json::from_str(options_json).map_err(|e| SolverError::InvalidAnalysis {
+            reason: e.to_string(),
+        })?;
+    solve_transient(&parse_netlist(netlist_json)?, &options)
 }
