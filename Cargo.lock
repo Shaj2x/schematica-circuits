@@ -70,6 +70,7 @@ name = "schematica-solver-wasm"
 version = "0.1.0"
 dependencies = [
  "schematica-solver",
+ "serde",
  "serde_json",
  "wasm-bindgen",
 ]
