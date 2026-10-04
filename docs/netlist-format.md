@@ -37,6 +37,14 @@ because a terminal names it, so there is no separate node list.
 | `resistor`       | `a`, `b`      | ohms, must be > 0  | Ohm's law |
 | `voltage_source` | `pos`, `neg`  | volts, any sign    | v(pos) − v(neg) = value |
 | `current_source` | `from`, `to`  | amperes, any sign  | pushes `value` A from `from` to `to` through the source |
+| `capacitor`      | `a`, `b`      | farads, must be > 0  | i = C dv/dt; open circuit at DC |
+| `inductor`       | `a`, `b`      | henries, must be > 0 | v = L di/dt; short circuit at DC |
+
+Capacitors take an optional `initial_voltage` (v(a) − v(b) at t = 0) and
+inductors an optional `initial_current` (from `a` to `b` at t = 0). Both
+default to 0 and only affect transient analysis. They were added without
+bumping `version`: every version-1 netlist written before them is still valid
+and means the same thing.
 
 Values are plain JSON numbers in base units: `4700`, not `"4.7k"`. Converting
 engineering notation is the job of whatever produces the netlist (the editor
@@ -72,6 +80,33 @@ component type, so the absorbed powers of the whole circuit sum to zero
 
 Keys are emitted in sorted order, so output is deterministic and diffable.
 
+## Transient analysis
+
+A transient run takes the netlist plus separate options. The netlist describes
+the circuit, and the options describe the question being asked about it:
+
+```json
+{ "stop_time": 0.005, "time_step": 5e-6, "method": "trapezoidal" }
+```
+
+| Field | Meaning |
+|-------|---------|
+| `stop_time` | Simulate from t = 0 to this time, in seconds (> 0). |
+| `time_step` | Requested fixed step in seconds. It is adjusted slightly so that a whole number of steps ends exactly at `stop_time`. At most 100 000 steps. |
+| `method` | `"trapezoidal"` (default, second order) or `"backward_euler"` (first order, strongly damped). |
+
+The run starts from the initial conditions above, like a switch closing at
+t = 0, rather than from a DC operating point. The output is stored by column:
+one time axis and one array per signal, with the same sign conventions as DC.
+
+```json
+{
+  "time": [0, 5e-6, 1e-5],
+  "node_voltages": { "gnd": [0, 0, 0], "out": [0, 0.0249, 0.0497] },
+  "branch_currents": { "C1": [0.005, 0.00498, 0.00495], "R1": [0.005, 0.00498, 0.00495] }
+}
+```
+
 ## Errors
 
 The solver rejects netlists it cannot solve, with a specific reason:
@@ -82,11 +117,13 @@ The solver rejects netlists it cannot solve, with a specific reason:
 | `UnsupportedVersion` | `version` is not 1 |
 | `EmptyCircuit` | No components |
 | `EmptyId`, `EmptyNodeName`, `DuplicateId` | Bad identifiers |
-| `InvalidValue` | Non-finite value, or resistance ≤ 0 |
+| `InvalidValue` | Non-finite value or initial condition, or R, C or L ≤ 0 |
 | `ShortedComponent` | Both terminals on the same node (almost always a wiring mistake) |
 | `MissingGround` | No component touches the ground node |
-| `FloatingNodes` | Nodes with no path to ground through resistors or voltage sources (includes current sources in series) |
-| `VoltageSourceLoop` | Voltage sources forming a closed loop (includes two in parallel) |
+| `FloatingNodes` | Nodes with no path to ground that fixes their voltage (includes current sources in series, and at DC nodes reached only through capacitors) |
+| `VoltageSourceLoop` | Voltage sources forming a closed loop (includes two in parallel, and at DC an inductor across a source) |
+| `InvalidAnalysis` | Bad transient options (non-positive times, step longer than stop time, too many steps) |
+| `UndefinedInitialState` | The t = 0 state has no unique solution, for example an uncharged capacitor directly across a source. Carries the underlying error as `cause`. |
 | `SingularMatrix` | Numerically degenerate input the structural checks cannot see |
 
 Errors serialize as JSON tagged by `kind` (snake_case) with the variant's

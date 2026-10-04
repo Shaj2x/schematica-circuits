@@ -4,7 +4,7 @@ Turn a photo of a circuit schematic, hand-drawn or from a textbook, into an
 interactive simulation, with an AI assistant that explains the solution step by
 step.
 
-> **Status:** in development. You can draw and solve DC circuits in the browser; photo input and AI explanations are planned.
+> **Status:** in development. You can draw circuits in the browser and solve them at DC or over time, with live plots; photo input and AI explanations are planned.
 
 ## Roadmap
 
@@ -12,7 +12,7 @@ step.
 |-------|-------|--------|
 | 1 | DC solver core in Rust (Modified Nodal Analysis) | ✅ Done |
 | 2 | WebAssembly build + React editor with live re-solve | ✅ Done |
-| 3 | Transient analysis (capacitors, inductors) | Planned |
+| 3 | Transient analysis (capacitors, inductors) | ✅ Done |
 | 4 | FastAPI backend, saved circuits, AI explanations | Planned |
 | 5 | Computer vision: photo → netlist | Planned |
 | 6 | Docker, CI, benchmarks | Planned |
@@ -44,7 +44,7 @@ npm run dev          # builds the WASM solver, then starts Vite on http://localh
 ## Tests and checks
 
 ```sh
-cargo test                                   # solver: fixtures, error cases, WASM envelope
+cargo test                                   # solver: fixtures, errors, transient vs exact solutions
 cargo clippy --all-targets -- -D warnings
 
 cd frontend

@@ -66,8 +66,9 @@ hundreds of times below one 16 ms frame. So
 the app re-solves inside a `useMemo` on every edit and every slider tick, with
 no debouncing and no Web Worker. Both would add complexity for no visible
 benefit at this size. The measured time is shown in the results panel, so the
-claim stays checkable. If Phase 3 transient runs get slow, a worker is the
-first thing to add.
+claim stays checkable. A 1000-step transient run takes about 2 ms, mostly
+JSON across the WASM boundary (see `docs/solver.md`). If runs get slow, typed
+arrays instead of JSON come first, then a Web Worker.
 
 ### The solver is injected, not imported
 
@@ -113,7 +114,36 @@ it first. wasm-pack's optimizer, `wasm-opt`, comes from the pinned `binaryen`
 npm package, because older system releases miscompile wasm-bindgen's externref
 table. A test caught this as a `Table.grow` failure on load.
 
-Production bundle: about 74 KB gzipped WASM and 79 KB gzipped JS.
+Production bundle: about 91 KB gzipped WASM and 93 KB gzipped JS (including d3-scale and d3-shape).
+
+## Transient mode
+
+The DC/Transient switch chooses the analysis. In transient mode:
+
+- **Settings** start from `suggestSettings`: about five of the circuit's
+  slowest time constants, estimated cheaply from component values (RC with the
+  largest R, L/R with the smallest, the LC period 2π√(LC)) and rounded up to
+  1, 2 or 5 × 10ⁿ. Exact time constants would need Thevenin resistances, which
+  is itself an analysis; this only picks a starting point the user can change.
+  Examples carry their own settings.
+- **Plots** (`WaveformChart`) use `d3-scale` for scales and ticks and
+  `d3-shape` for line paths, with React rendering the SVG. That is about 15 KB
+  gzipped, and it gives full control over the crosshair and labels, which a
+  chart component library would hide.
+- **One axis per chart.** Voltages and currents get separate charts instead of
+  a dual-axis chart, so each line is read against the scale it belongs to.
+- **Colors** come from a categorical palette validated for color-vision
+  deficiency (adjacent ΔE ≥ 9). Each selected signal keeps its color slot
+  until it is turned off, so turning one signal off never repaints the others.
+  Each chart is capped at four lines, and every line also gets a direct text
+  label, because two slots are below 3:1 contrast on white.
+- **Long runs are decimated** to about 1500 points per line for drawing,
+  keeping each bucket's minimum and maximum. Taking every k-th sample could
+  skip exactly the overshoot a student is looking for.
+- **One time cursor** is shared by both charts, the values table and the
+  canvas. Hover or use the arrow keys on a chart to move it; it stays put when
+  the pointer leaves, so you can then hover the circuit to read every part at
+  that instant.
 
 ## Known limitations
 
@@ -121,4 +151,7 @@ Production bundle: about 74 KB gzipped WASM and 79 KB gzipped JS.
 - No undo yet. The reducer design makes it straightforward (keep a stack of past
   `schematic` values).
 - Hover readouts need a pointer. The results tables list every value for
-  keyboard and touch users.
+  keyboard and touch users, and the charts' time cursor moves with the arrow
+  keys.
+- Sources are constant, so a transient run is a step response from the
+  initial conditions. Pulse and sine sources are the natural next addition.
