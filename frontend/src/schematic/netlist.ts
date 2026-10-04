@@ -28,6 +28,8 @@ export interface Connectivity {
   nodeOfWire: Map<string, string>
   /** Connection points where three or more connections meet (drawn as dots). */
   junctions: Point[]
+  /** Connection points with only one connection: unconnected terminals and wire ends. */
+  openEnds: Point[]
 }
 
 export function buildNetlist(schematic: Schematic): Connectivity {
@@ -103,15 +105,15 @@ export function buildNetlist(schematic: Schematic): Connectivity {
     }
   })
 
-  const junctions = [...points.entries()]
-    .filter(([key]) => (degree.get(key) ?? 0) >= 3)
-    .map(([, p]) => p)
+  const withDegree = (test: (d: number) => boolean) =>
+    [...points.entries()].filter(([key]) => test(degree.get(key) ?? 0)).map(([, p]) => p)
 
   return {
     netlist: { version: 1, ground: GROUND_NODE, components },
     nodeOfPoint,
     nodeOfWire,
-    junctions,
+    junctions: withDegree((d) => d >= 3),
+    openEnds: withDegree((d) => d === 1),
   }
 }
 

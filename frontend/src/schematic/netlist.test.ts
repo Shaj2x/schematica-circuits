@@ -88,6 +88,21 @@ describe('buildNetlist connection rules', () => {
     expect(netlist.components[1]).toMatchObject({ a: 'n1', b: 'n2' })
   })
 
+  it('reports unconnected ends and no junctions for a dangling part', () => {
+    const s: Schematic = {
+      parts: [{ id: 'R1', kind: 'resistor', a: p(0, 0), b: p(2, 0), value: 1 }],
+      wires: [{ id: 'W1', a: p(2, 0), b: p(2, 3) }],
+      grounds: [],
+    }
+    const { openEnds, junctions } = buildNetlist(s)
+    expect(openEnds).toEqual([p(0, 0), p(2, 3)])
+    expect(junctions).toEqual([])
+  })
+
+  it('has no open ends in a complete example circuit', () => {
+    expect(buildNetlist(voltageDivider.schematic).openEnds).toEqual([])
+  })
+
   it('handles an empty schematic', () => {
     expect(buildNetlist(emptySchematic).netlist.components).toEqual([])
   })
