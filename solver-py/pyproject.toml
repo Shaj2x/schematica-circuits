@@ -1,0 +1,17 @@
+[build-system]
+requires = ["maturin>=1.9,<2"]
+build-backend = "maturin"
+
+[project]
+name = "schematica-solver"
+version = "0.1.0"
+description = "Python bindings for the Schematica circuit solver (Rust)"
+requires-python = ">=3.11"
+license = "MIT"
+
+[tool.maturin]
+# Mixed Rust/Python layout: the compiled module is schematica_solver._native,
+# wrapped by the typed Python API in python/schematica_solver/.
+python-source = "python"
+module-name = "schematica_solver._native"
+features = ["pyo3/extension-module"]

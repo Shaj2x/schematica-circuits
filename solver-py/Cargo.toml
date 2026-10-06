@@ -1,0 +1,18 @@
+[package]
+name = "schematica-solver-py"
+version = "0.1.0"
+edition = "2024"
+description = "Python bindings for schematica-solver"
+license = "MIT"
+
+[lib]
+name = "_native"
+# cdylib is the Python extension module; rlib lets `cargo test` link it.
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+schematica-solver = { path = "../solver" }
+# abi3-py311: one wheel works on every CPython >= 3.11.
+pyo3 = { version = "0.29.3", features = ["abi3-py311"] }
+# `extension-module` (no libpython link) is enabled by maturin only, in
+# pyproject.toml, so `cargo test --workspace` can still link this crate.
