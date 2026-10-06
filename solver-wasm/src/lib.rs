@@ -6,14 +6,14 @@
 //! - The netlist is already a JSON contract, so this adds no new format.
 //! - It needs no extra dependency, and the cost of serializing a circuit with
 //!   tens of components is a few microseconds.
-//! - The same envelope can be returned verbatim by the backend later.
+//! - The Python binding returns the same envelope (built in
+//!   `schematica_solver::envelope`), so browser and backend agree exactly.
 //!
 //! The function never throws. Errors come back inside the envelope, so the
 //! TypeScript side can handle them with an ordinary discriminated union
 //! instead of try/catch around every call.
 
-use serde::Serialize;
-use serde_json::{Value, json};
+use schematica_solver::envelope;
 use wasm_bindgen::prelude::*;
 
 /// Solves a netlist given as JSON.
@@ -24,7 +24,7 @@ use wasm_bindgen::prelude::*;
 /// human-readable `message`.
 #[wasm_bindgen]
 pub fn solve(netlist_json: &str) -> String {
-    envelope(schematica_solver::solve_json(netlist_json)).to_string()
+    envelope::solve_envelope(netlist_json)
 }
 
 /// Runs a transient analysis. `options_json` is
@@ -35,11 +35,7 @@ pub fn solve(netlist_json: &str) -> String {
 /// solution.
 #[wasm_bindgen(js_name = solveTransient)]
 pub fn solve_transient(netlist_json: &str, options_json: &str) -> String {
-    envelope(schematica_solver::solve_transient_json(
-        netlist_json,
-        options_json,
-    ))
-    .to_string()
+    envelope::solve_transient_envelope(netlist_json, options_json)
 }
 
 /// The netlist format version this build understands.
@@ -48,20 +44,10 @@ pub fn netlist_version() -> u32 {
     schematica_solver::NETLIST_VERSION
 }
 
-fn envelope<T: Serialize>(result: Result<T, schematica_solver::SolverError>) -> Value {
-    match result {
-        Ok(solution) => json!({ "ok": true, "solution": solution }),
-        Err(error) => {
-            let mut detail = serde_json::to_value(&error).expect("errors always serialize");
-            detail["message"] = Value::String(error.to_string());
-            json!({ "ok": false, "error": detail })
-        }
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
+    use serde_json::{Value, json};
 
     fn call(netlist: Value) -> Value {
         serde_json::from_str(&solve(&netlist.to_string())).unwrap()
