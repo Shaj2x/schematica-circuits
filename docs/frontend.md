@@ -145,6 +145,27 @@ The DC/Transient switch chooses the analysis. In transient mode:
   the pointer leaves, so you can then hover the circuit to read every part at
   that instant.
 
+## Backend features
+
+The DC sidebar has three tabs: **Results** (computed in the browser),
+**Explain** and **Check my work** (both from the backend), plus Save and Open
+in the header.
+
+- **One API client, passed in.** `api.ts` is a typed client for the backend,
+  and `App` receives it as a prop just like the solver, so UI tests use a
+  fake and never need a server. Errors come back as `ApiError`, carrying the
+  structured solver error when there is one, and an unreachable server gets a
+  plain "is the backend running?" message.
+- **Same-origin in development.** Vite proxies `/api` to the backend on port
+  8000, so there is no CORS setup.
+- **Panels belong to a circuit.** Explain and Check are keyed by the
+  netlist, so editing the circuit clears an explanation that no longer
+  matches it.
+- **Unverified numbers are shown, not hidden.** When the backend's grounding
+  check flags a value in an explanation, the panel lists it above the steps.
+- **Saved circuits keep their drawing.** Saving stores the editor geometry
+  alongside the netlist, so a circuit reopens exactly as drawn.
+
 ## Known limitations
 
 - Parts cannot be dragged; delete and re-place instead.
