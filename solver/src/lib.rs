@@ -32,6 +32,7 @@
 
 mod circuit;
 mod dc;
+pub mod envelope;
 pub mod error;
 mod graph;
 mod linalg;

@@ -1,7 +1,10 @@
 import { useEffect, useMemo, useReducer, useState } from 'react'
+import { type Api, httpApi } from './api'
+import { CheckPanel, ExplainPanel } from './editor/AssistantPanels'
 import { Canvas, type Hover } from './editor/Canvas'
 import { diagnose } from './editor/diagnose'
 import { Inspector } from './editor/Inspector'
+import { LibraryMenu } from './editor/LibraryMenu'
 import { Results } from './editor/Results'
 import { type Signal, type SignalKind, defaultSignals, pruneSignals, toggleSignal } from './editor/signals'
 import { Toolbar } from './editor/Toolbar'
@@ -16,13 +19,20 @@ import { emptySchematic, pointKey } from './schematic/model'
 import type { Solver } from './solver'
 
 type Mode = Analysis['mode']
+type Panel = 'results' | 'explain' | 'check'
+
+const PANELS: [Panel, string][] = [
+  ['results', 'Results'],
+  ['explain', 'Explain'],
+  ['check', 'Check my work'],
+]
 
 /**
- * The editor. It receives the solver as a prop instead of loading it itself,
- * so tests can pass in one initialized from disk and the component never
- * deals with async loading.
+ * The editor. It receives the solver and the backend client as props instead
+ * of creating them itself, so tests can pass in a solver initialized from
+ * disk and a fake API, and the component never deals with async loading.
  */
-export default function App({ solver }: { solver: Solver }) {
+export default function App({ solver, api = httpApi }: { solver: Solver; api?: Api }) {
   const [state, dispatch] = useReducer(editorReducer, voltageDivider.schematic, initialState)
   const [live, setLive] = useState(false)
   const [hover, setHover] = useState<Hover>()
@@ -32,10 +42,14 @@ export default function App({ solver }: { solver: Solver }) {
   const [chosenSignals, setChosenSignals] = useState<Signal[] | null>(null)
   // Sample index under the plot crosshair; undefined shows the final sample.
   const [cursor, setCursor] = useState<number>()
+  const [panel, setPanel] = useState<Panel>('results')
 
   const analysis = useMemo<Analysis>(() => (mode === 'dc' ? { mode } : { mode, settings }), [mode, settings])
   const simulation = useSimulation(solver, state.schematic, live, analysis)
   const { connectivity } = simulation
+  // Explanations and checks belong to the circuit they were made for; keying
+  // the panels by the netlist clears them as soon as the circuit changes.
+  const netlistKey = useMemo(() => JSON.stringify(connectivity.netlist), [connectivity])
 
   const failed = simulation.result?.ok === false ? simulation.result : simulation.transient?.ok === false ? simulation.transient : undefined
   const diagnosis = failed && !failed.ok ? diagnose(failed.error) : undefined
@@ -112,11 +126,21 @@ export default function App({ solver }: { solver: Solver }) {
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900">
       <header className="border-b border-slate-200 bg-white">
-        <div className="mx-auto flex max-w-7xl items-baseline gap-3 px-4 py-3">
+        <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-3 px-4 py-3">
           <h1 className="text-lg font-bold tracking-tight">Schematica</h1>
-          <p className="hidden text-sm text-slate-500 sm:block">
+          <p className="hidden text-sm text-slate-500 lg:block">
             Draw a circuit, solve it at DC or over time, and see every voltage and current.
           </p>
+          <LibraryMenu
+            api={api}
+            schematic={state.schematic}
+            netlist={connectivity.netlist}
+            onOpen={(schematic) => {
+              dispatch({ type: 'load', schematic })
+              setChosenSignals(null)
+              setCursor(undefined)
+            }}
+          />
         </div>
       </header>
 
@@ -186,7 +210,31 @@ export default function App({ solver }: { solver: Solver }) {
           />
           <hr className="border-slate-200" />
           {mode === 'dc' ? (
-            <Results live={live} simulation={simulation} diagnosis={diagnosis} onHover={setHover} />
+            <div className="space-y-4">
+              <div role="tablist" aria-label="Sidebar" className="flex gap-1 rounded-lg bg-slate-100 p-1 text-sm">
+                {PANELS.map(([id, label]) => (
+                  <button
+                    key={id}
+                    type="button"
+                    role="tab"
+                    aria-selected={panel === id}
+                    onClick={() => setPanel(id)}
+                    className={`flex-1 rounded-md px-2 py-1 ${
+                      panel === id ? 'bg-white text-sky-700 shadow-sm' : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+              {panel === 'results' && (
+                <Results live={live} simulation={simulation} diagnosis={diagnosis} onHover={setHover} />
+              )}
+              {panel === 'explain' && <ExplainPanel key={netlistKey} api={api} netlist={connectivity.netlist} />}
+              {panel === 'check' && (
+                <CheckPanel key={netlistKey} api={api} netlist={connectivity.netlist} nodes={nodes} partIds={partIds} />
+              )}
+            </div>
           ) : (
             <TransientPanel
               live={live}

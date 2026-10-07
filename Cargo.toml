@@ -1,6 +1,6 @@
 [workspace]
 resolver = "3"
-members = ["solver", "solver-wasm"]
+members = ["solver", "solver-py", "solver-wasm"]
 
 # Small, fast WebAssembly: the bundle is downloaded by every visitor.
 [profile.release]
