@@ -1,0 +1,10 @@
+.venv/
+__pycache__/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+# Datasets and training runs are large and reproducible from the scripts.
+data/
+runs/
+# Trained weights are committed deliberately (see weights/README.md); checkpoints are not.
+weights/*.pt
