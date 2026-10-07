@@ -81,7 +81,7 @@ def explain(analysis: NodalAnalysis) -> Explanation:
         Step(
             title="Solve the equations",
             detail="Solving the equations simultaneously gives the node voltages.",
-            equation=", ".join(f"v({n}) = {format_value(v[n], 'V')}" for n in analysis.nodes),
+            equation="\n".join(f"v({n}) = {format_value(v[n], 'V')}" for n in analysis.nodes),
         )
     )
 
@@ -98,7 +98,7 @@ def explain(analysis: NodalAnalysis) -> Explanation:
             Step(
                 title="Branch currents from Ohm's law",
                 detail="A positive current flows from a resistor's first terminal to its second.",
-                equation="; ".join(current_lines),
+                equation="\n".join(current_lines),
             )
         )
 

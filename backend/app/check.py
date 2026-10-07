@@ -90,7 +90,6 @@ def _diagnose(
     tolerance: float,
 ) -> str | None:
     """Recognizes the common mistakes; None when none fits."""
-    unit = "V" if kind == "voltage" else "A"
     if expected != 0 and _close(submitted, -expected, tolerance):
         if kind == "current":
             return (
@@ -106,7 +105,7 @@ def _diagnose(
         if exponent != 0 and _close(ratio, 10.0**exponent, 0.01 * 10.0**exponent):
             return (
                 f"Off by a factor of 10^{exponent}: check your unit prefixes "
-                f"(for example mA vs A, or kΩ vs Ω). The value should be {format_value(expected, unit)}."
+                "(for example mA vs A, or kΩ vs Ω)."
             )
 
     if kind == "voltage":
