@@ -341,4 +341,25 @@ def layout(parts: list[PartSpec], grounds: list[GroundSpec]) -> Layout:
                 if any(node[p] == name for p in points):
                     unrouted |= owners.get(n, set())
 
+    schematic = _at_origin(schematic)
     return Layout(schematic, netlist_of(schematic), sorted(unrouted), scale)
+
+
+def _at_origin(schematic: dict[str, Any]) -> dict[str, Any]:
+    """Shifts everything so the top-left point is (1, 1), where the editor's
+    canvas starts. Moving every point alike changes no connection."""
+    points = [p for part in schematic["parts"] for p in (part["a"], part["b"])]
+    points += [p for wire in schematic["wires"] for p in (wire["a"], wire["b"])]
+    points += [g["at"] for g in schematic["grounds"]]
+    if not points:
+        return schematic
+    dx, dy = 1 - min(p["x"] for p in points), 1 - min(p["y"] for p in points)
+
+    def move(p: dict[str, int]) -> dict[str, int]:
+        return {"x": p["x"] + dx, "y": p["y"] + dy}
+
+    return {
+        "parts": [{**part, "a": move(part["a"]), "b": move(part["b"])} for part in schematic["parts"]],
+        "wires": [{**wire, "a": move(wire["a"]), "b": move(wire["b"])} for wire in schematic["wires"]],
+        "grounds": [{**g, "at": move(g["at"])} for g in schematic["grounds"]],
+    }

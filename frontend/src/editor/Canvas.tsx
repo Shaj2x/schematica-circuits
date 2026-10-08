@@ -4,12 +4,9 @@ import { KINDS, PART_LENGTH, type Point, pointKey } from '../schematic/model'
 import { formatValue } from '../units'
 import type { Solution } from '../solver'
 import type { Diagnosis } from './diagnose'
-import { GRID, axes, partTransform, px } from './geometry'
+import { GRID, axes, canvasSize, partTransform, px } from './geometry'
 import { CurrentArrow, GroundSymbol, PartBody, PolarityMarks } from './symbols'
 import type { Simulation } from './useSimulation'
-
-export const COLS = 20
-export const ROWS = 12
 
 /** What the pointer (or a row in the results table) is pointing at. */
 export type Hover = { kind: 'node'; node: string; at?: Point } | { kind: 'part'; id: string }
@@ -30,6 +27,7 @@ export function Canvas({ state, dispatch, simulation, diagnosis, solution, hover
   const [cursor, setCursor] = useState<Point>()
   const { schematic, tool, selectedId, wireStart } = state
   const { connectivity } = simulation
+  const { cols, rows } = canvasSize(schematic)
 
   /** Client (screen) coordinates -> nearest grid point, or undefined off-grid. */
   function toGrid(event: PointerEvent | React.MouseEvent): Point | undefined {
@@ -39,7 +37,7 @@ export function Canvas({ state, dispatch, simulation, diagnosis, solution, hover
     const local = new DOMPoint(event.clientX, event.clientY).matrixTransform(matrix.inverse())
     const x = Math.round(local.x / GRID)
     const y = Math.round(local.y / GRID)
-    return x >= 0 && x <= COLS && y >= 0 && y <= ROWS ? { x, y } : undefined
+    return x >= 0 && x <= cols && y >= 0 && y <= rows ? { x, y } : undefined
   }
 
   const nodeOf = (p: Point) => connectivity.nodeOfPoint.get(pointKey(p))
@@ -61,7 +59,7 @@ export function Canvas({ state, dispatch, simulation, diagnosis, solution, hover
   return (
     <svg
       ref={svgRef}
-      viewBox={`${-GRID / 2} ${-GRID / 2} ${COLS * GRID + GRID} ${ROWS * GRID + GRID}`}
+      viewBox={`${-GRID / 2} ${-GRID / 2} ${cols * GRID + GRID} ${rows * GRID + GRID}`}
       className={`h-auto w-full touch-none select-none ${tool === 'select' ? 'cursor-default' : 'cursor-crosshair'}`}
       style={{ ['--canvas-bg' as string]: '#ffffff' }}
       role="application"
@@ -76,15 +74,15 @@ export function Canvas({ state, dispatch, simulation, diagnosis, solution, hover
       <rect
         x={-GRID / 2}
         y={-GRID / 2}
-        width={COLS * GRID + GRID}
-        height={ROWS * GRID + GRID}
+        width={cols * GRID + GRID}
+        height={rows * GRID + GRID}
         fill="var(--canvas-bg)"
       />
 
       {/* Grid dots */}
       <g className="fill-slate-300">
-        {Array.from({ length: (COLS + 1) * (ROWS + 1) }, (_, i) => (
-          <circle key={i} cx={(i % (COLS + 1)) * GRID} cy={Math.floor(i / (COLS + 1)) * GRID} r={1.5} />
+        {Array.from({ length: (cols + 1) * (rows + 1) }, (_, i) => (
+          <circle key={i} cx={(i % (cols + 1)) * GRID} cy={Math.floor(i / (cols + 1)) * GRID} r={1.5} />
         ))}
       </g>
 
@@ -244,6 +242,7 @@ export function Canvas({ state, dispatch, simulation, diagnosis, solution, hover
           <g pointerEvents="none">
             {Math.abs(current) > 1e-15 && <CurrentArrow a={part.a} b={part.b} forward={current > 0} />}
             <Tooltip
+              bounds={{ cols, rows }}
               at={{ x: mid.x * GRID + away.x * 30, y: mid.y * GRID + away.y * 30 }}
               direction={away}
               lines={[`${part.id}: ${formatValue(Math.abs(current), 'A')}`, `across: ${formatValue(across, 'V')}`]}
@@ -257,6 +256,7 @@ export function Canvas({ state, dispatch, simulation, diagnosis, solution, hover
         const v = voltage(hover.node)
         return (
           <Tooltip
+            bounds={{ cols, rows }}
             at={{ x: at.x * GRID, y: at.y * GRID }}
             lines={[v === undefined ? 'not connected to anything' : `${formatValue(v, 'V')}`]}
           />
@@ -288,17 +288,19 @@ function Tooltip({
   at,
   lines,
   direction = { x: 1, y: -1 },
+  bounds,
 }: {
   at: { x: number; y: number }
   lines: string[]
   direction?: { x: number; y: number }
+  bounds: { cols: number; rows: number }
 }) {
   const width = Math.max(...lines.map((l) => l.length)) * 7.2 + 16
   const height = lines.length * 16 + 10
   const place = (anchor: number, d: number, size: number, gap: number) =>
     d > 0.5 ? anchor + gap : d < -0.5 ? anchor - size - gap : anchor - size / 2
-  const [minX, maxX] = [-GRID / 2, COLS * GRID + GRID / 2 - width]
-  const [minY, maxY] = [-GRID / 2, ROWS * GRID + GRID / 2 - height]
+  const [minX, maxX] = [-GRID / 2, bounds.cols * GRID + GRID / 2 - width]
+  const [minY, maxY] = [-GRID / 2, bounds.rows * GRID + GRID / 2 - height]
   const x = Math.min(Math.max(place(at.x, direction.x, width, 10), minX), maxX)
   const y = Math.min(Math.max(place(at.y, direction.y, height, 10), minY), maxY)
   return (
