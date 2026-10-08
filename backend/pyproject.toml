@@ -13,6 +13,8 @@ dependencies = [
     "pydantic-settings>=2.4",
     "anthropic>=1,<2",
     "schematica-solver",
+    "schematica-vision[ocr]",
+    "python-multipart>=0.0.9",  # FastAPI's parser for file uploads
 ]
 
 [dependency-groups]
@@ -21,6 +23,12 @@ dev = ["pytest>=8", "httpx>=0.27", "ruff>=0.6", "mypy>=1.11"]
 [tool.uv.sources]
 # The Rust solver, built from source by maturin on `uv sync`.
 schematica-solver = { path = "../solver-py" }
+# The photo pipeline (ml/schematica_vision), without its training dependencies.
+schematica-vision = { path = "../ml" }
+
+[tool.uv]
+# Same reason as in ml/pyproject.toml: keep only the headless OpenCV build.
+override-dependencies = ["opencv-python; sys_platform == 'never'"]
 
 [tool.ruff]
 line-length = 110
@@ -36,7 +44,7 @@ strict = true
 plugins = ["pydantic.mypy"]
 
 [[tool.mypy.overrides]]
-module = ["schematica_solver.*"]
+module = ["schematica_solver.*", "schematica_vision.*"]
 ignore_missing_imports = false
 
 [tool.pytest.ini_options]
