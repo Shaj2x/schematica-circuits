@@ -11,6 +11,7 @@ import schematica_solver
 from fastapi import FastAPI, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session, sessionmaker
 
 from .config import Settings, get_settings
@@ -58,4 +59,8 @@ def create_app(
     app.include_router(circuits.router)
     app.include_router(analysis.router)
     app.include_router(recognize.router)
+
+    # Last, so every /api route above wins: the app itself at /.
+    if settings.static_dir is not None:
+        app.mount("/", StaticFiles(directory=settings.static_dir, html=True), name="app")
     return app

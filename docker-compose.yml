@@ -1,0 +1,31 @@
+# The whole app on one machine:   docker compose up --build
+# Then open http://localhost:8000
+#
+# Optional: ANTHROPIC_API_KEY=... docker compose up   (Claude-written explanations)
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: schematica
+      POSTGRES_PASSWORD: schematica
+      POSTGRES_DB: schematica
+    volumes:
+      - db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U schematica"]
+      interval: 2s
+      retries: 30
+
+  app:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: postgresql+psycopg://schematica:schematica@db:5432/schematica
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  db:

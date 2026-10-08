@@ -1,0 +1,24 @@
+# Render Blueprint: the whole app (web service + Postgres) from this repo.
+# Deploy: https://render.com/deploy?repo=https://github.com/Shaj2x/schematica-circuits
+services:
+  - type: web
+    name: schematica
+    runtime: docker
+    plan: free
+    healthCheckPath: /api/health
+    autoDeploy: true
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: schematica-db
+          property: connectionString
+      # Optional: set it in the Render dashboard to have Claude write
+      # explanations. Without it they come from the built-in template.
+      - key: ANTHROPIC_API_KEY
+        sync: false
+
+databases:
+  - name: schematica-db
+    plan: free
+    databaseName: schematica
+    user: schematica
