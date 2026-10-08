@@ -1,14 +1,35 @@
 # Schematica
 
-Turn a photo of a circuit schematic, hand-drawn or from a textbook, into an
-interactive simulation, with an AI assistant that explains the solution step by
-step.
+[![CI](https://github.com/Shaj2x/schematica-circuits/actions/workflows/ci.yml/badge.svg)](https://github.com/Shaj2x/schematica-circuits/actions/workflows/ci.yml)
 
-> **Status:** in development. You can draw circuits or start from a photo of one, solve them at DC or over time with live plots, save them, get step-by-step explanations and check your own answers. Docker, CI and benchmarks are next.
+A circuit simulator you can draw in, or start from a photo of a hand-drawn
+schematic. It solves the circuit in your browser, shows current flowing
+through the wires, and explains the solution step by step.
 
-**Try it:** https://shaj2x.github.io/schematica-circuits/ (browser-only demo: drawing, the
-WebAssembly solver and live plots. Saving, explanations and photo input need the backend; see
-*Running it* below.)
+**Try it:** https://shaj2x.github.io/schematica-circuits/ (the browser half:
+drawing, the WebAssembly solver and live plots). The full app, with saved
+circuits, explanations, answer checking and photo input, runs from one Docker
+image: see [Deploying](#deploying).
+
+## What it does
+
+- **Draw and simulate.** Place resistors, sources, capacitors and inductors
+  on a grid, wire them, and solve at DC or over time. The solver is Rust
+  (Modified Nodal Analysis) compiled to WebAssembly, so every edit and slider
+  drag re-solves in well under a frame.
+- **See the circuit work.** Wires take the colour of their voltage, and dots
+  flow along them at a speed set by the actual current in each wire segment
+  (from KCL on the wire network). Hover any part or wire for exact readouts.
+- **Transient plots.** Capacitor charging, RLC ringing: voltage and current
+  waveforms with a shared time cursor that also drives the circuit readouts.
+- **Learn from it.** Step-by-step nodal analysis for any circuit, and
+  "check my work" that says which of your hand-calculated answers are wrong
+  and the likely mistake. With an API key, Claude writes the explanations;
+  every number in them is checked against the solver.
+- **Start from a photo.** A YOLOv8 detector, OpenCV wire tracing and OCR turn
+  a photo into an editable schematic, with every guess flagged for review.
+- **A real editor.** Undo/redo, drag to move, keyboard shortcuts, share a
+  circuit as a link, export and import files, save to the server.
 
 ## Roadmap
 
@@ -19,7 +40,7 @@ WebAssembly solver and live plots. Saving, explanations and photo input need the
 | 3 | Transient analysis (capacitors, inductors) | ✅ Done |
 | 4 | FastAPI backend, saved circuits, AI explanations | ✅ Done (Claude-written explanations switch on with an API key) |
 | 5 | Computer vision: photo → editable schematic | ✅ Done (needs a trained model: see [ml/README.md](ml/README.md)) |
-| 6 | Docker, CI, benchmarks | Planned |
+| 6 | Docker, CI, deployment | ✅ Done. Benchmarks next (detection accuracy needs the trained model) |
 
 ## Repository layout
 
@@ -53,6 +74,25 @@ without an API key, from a deterministic template. Set `ANTHROPIC_API_KEY`
 in `backend/.env` to have Claude write them instead. Photo upload needs a
 trained detector in `ml/weights/model.onnx`; [ml/README.md](ml/README.md)
 explains how to train one on Colab in about an hour.
+
+## Deploying
+
+**Everything, on your machine** (Docker):
+
+```sh
+docker compose up --build        # then open http://localhost:8000
+```
+
+That builds one image (frontend, API, photo pipeline) and starts it next to
+Postgres. Migrations run on start. Add `ANTHROPIC_API_KEY=...` in front for
+Claude-written explanations, and put a trained `model.onnx` in `ml/weights/`
+before building for photo input.
+
+**Everything, hosted** (Render, free tier): click
+[Deploy to Render](https://render.com/deploy?repo=https://github.com/Shaj2x/schematica-circuits).
+`render.yaml` creates the web service and its Postgres database and wires
+them together. Free services sleep when idle, so the first visit after a
+while takes about a minute to wake.
 
 ### The website
 
