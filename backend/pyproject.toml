@@ -24,7 +24,7 @@ dev = ["pytest>=8", "httpx>=0.27", "ruff>=0.6", "mypy>=1.11"]
 # The Rust solver, built from source by maturin on `uv sync`.
 schematica-solver = { path = "../solver-py" }
 # The photo pipeline (ml/schematica_vision), without its training dependencies.
-schematica-vision = { path = "../ml" }
+schematica-vision = { path = "../ml", editable = true }
 
 [tool.uv]
 # Same reason as in ml/pyproject.toml: keep only the headless OpenCV build.

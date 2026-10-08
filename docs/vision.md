@@ -33,8 +33,10 @@ The code is in `ml/schematica_vision/`, and training is in `ml/training/`
 The model only answers "what symbols are where". Connectivity comes from the
 pixels: erase the symbols, and each connected blob of remaining ink is a
 net. A part's terminals are the nets that touch thin strips just outside its
-box. The two opposite sides with the most ink give its orientation, which
-also handles round symbols such as sources.
+box. An elongated box runs along its long side. Only near-square symbols,
+such as source circles, are oriented by which pair of opposite sides the
+wires touch. Counting ink for every part let a handwritten value above a
+resistor outvote its wires whenever the detector missed the text.
 
 An end-to-end model that predicts the circuit graph directly exists in the
 research literature, but it needs graph-labelled training data and is hard to
@@ -82,7 +84,13 @@ detours. The editor connects anything that touches (a wire through a
 terminal, a wire ending on another wire), so any route that would touch
 another net's wire or terminal is rejected.
 
-After routing, the layout is run back through `connectivity()`, a Python port
+Hand drawings are spread out, and snapping at part size can give a layout 40
+columns wide that is mostly empty. Runs of more than three empty columns or
+rows are closed up to three. The x and y remaps are monotone and keep every
+small gap exactly, so parts keep their length, wires stay orthogonal, and
+whether a point lies on a wire does not change.
+
+After routing and compression, the layout is run back through `connectivity()`, a Python port
 of the editor's connection rules. That checks every traced net became exactly
 one editor node and no two nets merged. Any part whose wiring could not be
 drawn safely is named in an `unrouted` warning instead of being silently
@@ -103,6 +111,7 @@ names the parts involved:
 | `low_confidence` | Detector confidence below 0.5 |
 | `unsupported_symbol` | An `other` symbol was found and left out |
 | `unconnected` | No wire found on one side of a part |
+| `shorted` | Both ends of a part are on one net. Usually a symbol between them was missed and its ink joined the wires |
 | `unrouted` | The wiring could not be redrawn safely |
 | `default_value` | No value could be read, so the editor default was used |
 | `polarity` | Always for sources: the + side and the arrow direction are not detected |
@@ -137,6 +146,23 @@ real OCR is also tested on rendered values.
 The same renderer generates a synthetic YOLO dataset, so
 `train.py --smoke` checks the whole training → export → ONNX evaluation path
 in under a minute on a CPU.
+
+## What a real model taught the pipeline
+
+Ground-truth boxes are clean. A trained detector is not, and running a small
+model trained on synthetic data through the browser turned up three failures
+that the tests now cover:
+
+- **One symbol, two labels.** NMS runs per class, so one unclear squiggle can
+  come back as both a resistor and an inductor. Overlapping symbol boxes now
+  keep only the most confident label.
+- **Collisions in placement.** Two detections that snap to the same grid
+  point used to raise an error. Placement now tries a finer grid, then nudges
+  the later part to the nearest free spot.
+- **Missed text.** See orientation above.
+
+`ml/tests/test_model.py` also checks that our ONNX decoding gives the same
+boxes as Ultralytics' own predictor, whenever a model file is present.
 
 ## Known limitations
 

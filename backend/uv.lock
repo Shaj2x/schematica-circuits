@@ -1566,7 +1566,7 @@ requires-dist = [
     { name = "pydantic-settings", specifier = ">=2.4" },
     { name = "python-multipart", specifier = ">=0.0.9" },
     { name = "schematica-solver", directory = "../solver-py" },
-    { name = "schematica-vision", extras = ["ocr"], directory = "../ml" },
+    { name = "schematica-vision", extras = ["ocr"], editable = "../ml" },
     { name = "sqlalchemy", specifier = ">=2.0" },
     { name = "uvicorn", extras = ["standard"], specifier = ">=0.30" },
 ]
@@ -1587,7 +1587,7 @@ source = { directory = "../solver-py" }
 [[package]]
 name = "schematica-vision"
 version = "0.1.0"
-source = { directory = "../ml" }
+source = { editable = "../ml" }
 dependencies = [
     { name = "numpy", version = "2.4.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12'" },
     { name = "numpy", version = "2.5.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
