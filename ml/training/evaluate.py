@@ -47,7 +47,8 @@ def draw(image: Image, result: dict[str, Any]) -> Image:
             COLORS["used"] if d["part_id"] else COLORS["other"] if d["label"] == "other" else COLORS["mark"]
         )
         cv2.rectangle(out, (x0, y0), (x1, y1), color, 2)
-        caption = f"{d['part_id'] or d['label']} {d['confidence']:.2f}"
+        name = f"{d['part_id']} ({d['label']})" if d["part_id"] else d["label"]
+        caption = f"{name} {d['confidence']:.2f}"
         cv2.putText(
             out, caption, (x0, max(12, y0 - 4)), cv2.FONT_HERSHEY_SIMPLEX, 0.45, color, 1, cv2.LINE_AA
         )

@@ -132,3 +132,28 @@ def test_recovers_random_ladders(seed: int) -> None:
     result = recognize(rendering.image, GroundTruthDetector(rendering), GroundTruthReader(rendering))
     ids = {source: result["detections"][i]["part_id"] for i, source in rendering.sources.items()}
     assert_equivalent(result["netlist"], netlist_of(schematic), ids)
+
+
+def test_one_symbol_gets_one_label() -> None:
+    # A real model can report the same squiggle as two classes (NMS runs per class).
+    rendering = render(DIVIDER)
+    detector = GroundTruthDetector(rendering)
+    resistor = next(d for d in detector.detections if d.label == "resistor")
+    detector.detections.append(Detection("inductor", 0.6, resistor.box))
+    result = recognize(rendering.image, detector, GroundTruthReader(rendering))
+    assert_equivalent(result["netlist"], netlist_of(DIVIDER))
+    assert "inductor" not in {d["label"] for d in result["detections"]}
+
+
+def test_overlapping_parts_are_nudged_apart() -> None:
+    from schematica_vision.layout import PartSpec, layout
+
+    specs = [
+        PartSpec("R1", "resistor", 1, "horizontal", (100, 100), 80, (1, 2)),
+        PartSpec("R2", "resistor", 2, "horizontal", (100, 100), 80, (3, 4)),  # exactly on top of R1
+        PartSpec("R3", "resistor", 3, "vertical", (105, 102), 80, (5, 6)),
+    ]
+    result = layout(specs, [])
+    points = [(p[k]["x"], p[k]["y"]) for p in result.schematic["parts"] for k in ("a", "b")]
+    assert len(points) == len(set(points)) == 6
+    assert result.unrouted == []

@@ -15,7 +15,7 @@ from dataclasses import dataclass
 from statistics import median
 from typing import Any
 
-from .classes import DEFAULT_VALUE, ID_PREFIX
+from .classes import COMPONENT_KINDS, DEFAULT_VALUE, ID_PREFIX
 from .detector import Detector
 from .image import Image, decode, ink_mask
 from .layout import GroundSpec, PartSpec, layout
@@ -25,6 +25,25 @@ from .values import Reading, read_text
 from .wires import TracedPart, trace
 
 LOW_CONFIDENCE = 0.5
+
+SYMBOLS = frozenset({*COMPONENT_KINDS, "ground", "other"})
+
+
+def _one_label_per_symbol(detections: list[Detection], overlap: float = 0.6) -> list[Detection]:
+    """The detector runs NMS per class, so one unclear squiggle can come back
+    as both a resistor and an inductor. A symbol is one thing: of symbol boxes
+    that mostly overlap, keep the most confident. Marks (text, junctions,
+    crossovers) are left alone; they legitimately sit on or inside symbols."""
+    kept: list[Detection] = []
+    for d in sorted((d for d in detections if d.label in SYMBOLS), key=lambda d: -d.confidence):
+        duplicate = any(
+            d.box.iou(k.box) > overlap or d.box.intersection(k.box) > 0.85 * min(d.box.area(), k.box.area())
+            for k in kept
+        )
+        if not duplicate:
+            kept.append(d)
+    keep = {id(d) for d in kept}
+    return [d for d in detections if d.label not in SYMBOLS or id(d) in keep]
 
 
 @dataclass
@@ -90,7 +109,7 @@ def recognize(
 ) -> dict[str, Any]:
     image = decode(data) if isinstance(data, bytes) else data
     ink = ink_mask(image)
-    detections = detector.detect(image)
+    detections = _one_label_per_symbol(detector.detect(image))
     tracing = trace(ink, detections)
 
     warnings: list[dict[str, Any]] = []

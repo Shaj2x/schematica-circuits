@@ -16,6 +16,8 @@ to confirm each terminal ended up on the net it was traced to.
 
 from __future__ import annotations
 
+import itertools
+from collections.abc import Iterator
 from dataclasses import dataclass, field
 from itertools import pairwise
 from statistics import median
@@ -139,31 +141,52 @@ def netlist_of(schematic: dict[str, Any]) -> dict[str, Any]:
 # Placement.
 
 
-def _place(parts: list[PartSpec], grounds: list[GroundSpec], scale: float) -> dict[str, Any] | None:
-    """Snaps everything to a grid of `scale` pixels per unit, or None if two
-    things land on the same point."""
-    occupied: dict[Point, str] = {}  # point -> what is there
+def _nearby(p: Point) -> Iterator[Point]:
+    """p, then rings of points around it, nearest first, without end."""
+    yield p
+    for r in itertools.count(1):
+        ring = [(dx, dy) for dx in range(-r, r + 1) for dy in range(-r, r + 1) if max(abs(dx), abs(dy)) == r]
+        ring.sort(key=lambda d: (abs(d[0]) + abs(d[1]), abs(d[1]), d))
+        for dx, dy in ring:
+            yield (p[0] + dx, p[1] + dy)
+
+
+def _place(
+    parts: list[PartSpec], grounds: list[GroundSpec], scale: float, nudge: bool
+) -> dict[str, Any] | None:
+    """Snaps everything to a grid of `scale` pixels per unit. When two things
+    land on the same point: None, or with `nudge`, move the later one to the
+    nearest free spot."""
+    occupied: set[Point] = set()
+    half = PART_LENGTH // 2
+
+    def footprint(c: Point, axis: str) -> tuple[Point, Point, Point]:
+        cx, cy = c
+        if axis == "horizontal":
+            return (cx - half, cy), (cx + half, cy), c
+        return (cx, cy - half), (cx, cy + half), c
+
     placed_parts = []
     for part in parts:
-        cx, cy = round(part.center[0] / scale), round(part.center[1] / scale)
-        half = PART_LENGTH // 2
-        a, b = (
-            ((cx - half, cy), (cx + half, cy))
-            if part.axis == "horizontal"
-            else ((cx, cy - half), (cx, cy + half))
-        )
-        for p, what in ((a, f"{part.id}.a"), (b, f"{part.id}.b"), ((cx, cy), f"{part.id}.body")):
-            if p in occupied:
-                return None
-            occupied[p] = what
+        center = (round(part.center[0] / scale), round(part.center[1] / scale))
+        for c in _nearby(center) if nudge else iter([center]):
+            a, b, body = footprint(c, part.axis)
+            if not {a, b, body} & occupied:
+                break
+        else:
+            return None
+        occupied |= {a, b, body}
         placed_parts.append((part, a, b))
 
     placed_grounds = []
     for ground in grounds:
-        p = (round(ground.at[0] / scale), round(ground.at[1] / scale))
-        if p in occupied:
+        at = (round(ground.at[0] / scale), round(ground.at[1] / scale))
+        for p in _nearby(at) if nudge else iter([at]):
+            if p not in occupied:
+                break
+        else:
             return None
-        occupied[p] = ground.id
+        occupied.add(p)
         placed_grounds.append((ground, p))
 
     return {"parts": placed_parts, "grounds": placed_grounds}
@@ -265,15 +288,15 @@ def layout(parts: list[PartSpec], grounds: list[GroundSpec]) -> Layout:
     lengths = [p.length for p in parts if p.length > 0]
     base = (median(lengths) if lengths else 80.0) / PART_LENGTH
 
-    # Try progressively finer grids until no two things share a point.
-    placed, scale = None, base
-    for attempt in range(5):
-        scale = base / 2**attempt
-        placed = _place(parts, grounds, scale)
+    # Exact positions on the natural grid, else on a grid twice as fine, else
+    # nudge whatever collides to the nearest free spot (wires are redrawn
+    # anyway, so moving a part changes how it looks, not what it connects).
+    placed = None
+    for scale, nudge in ((base, False), (base / 2, False), (base / 2, True)):
+        placed = _place(parts, grounds, scale, nudge)
         if placed is not None:
             break
-    if placed is None:
-        raise ValueError("parts overlap too much to place on a grid")
+    assert placed is not None  # nudging always finds room
 
     # Terminals with no wire get a net of their own, so nothing joins them.
     fresh = iter(range(-1, -10_000, -1))

@@ -27,10 +27,13 @@ class Box:
     def area(self) -> float:
         return max(0.0, self.width) * max(0.0, self.height)
 
-    def iou(self, other: Box) -> float:
+    def intersection(self, other: Box) -> float:
         ix = max(0.0, min(self.x1, other.x1) - max(self.x0, other.x0))
         iy = max(0.0, min(self.y1, other.y1) - max(self.y0, other.y0))
-        inter = ix * iy
+        return ix * iy
+
+    def iou(self, other: Box) -> float:
+        inter = self.intersection(other)
         union = self.area() + other.area() - inter
         return inter / union if union > 0 else 0.0
 
