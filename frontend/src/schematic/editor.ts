@@ -22,7 +22,19 @@ export interface EditorState {
   selectedId?: string
   /** First point of a wire being drawn. */
   wireStart?: Point
+  /** Earlier drawings, most recent last, for undo. */
+  past: Schematic[]
+  /** Undone drawings, next first, for redo. */
+  future: Schematic[]
+  /**
+   * What the last edit was, when consecutive edits of the same kind should
+   * undo as one: every tick of a value slider, every step of one drag.
+   */
+  lastEdit?: string
 }
+
+/** How many steps of undo to keep. Schematics are small, so this is cheap. */
+export const HISTORY_LIMIT = 200
 
 export type EditorAction =
   | { type: 'setTool'; tool: Tool }
@@ -35,12 +47,71 @@ export type EditorAction =
   | { type: 'flip'; id: string }
   | { type: 'cancel' }
   | { type: 'load'; schematic: Schematic }
+  /** Move a part, ground or wire by a grid offset. Steps sharing a `gesture` undo as one. */
+  | { type: 'move'; id: string; dx: number; dy: number; gesture?: number }
+  | { type: 'undo' }
+  | { type: 'redo' }
 
 export function initialState(schematic: Schematic = emptySchematic): EditorState {
-  return { schematic, tool: 'select', orientation: 'horizontal' }
+  return { schematic, tool: 'select', orientation: 'horizontal', past: [], future: [] }
 }
 
+export const canUndo = (state: EditorState) => state.past.length > 0
+export const canRedo = (state: EditorState) => state.future.length > 0
+
+/**
+ * Every action, with undo history kept around the document changes.
+ *
+ * History holds whole schematics rather than inverse operations: they are a
+ * few kilobytes, structurally shared, and "restore the previous drawing"
+ * cannot get out of step with the edit that produced it.
+ */
 export function editorReducer(state: EditorState, action: EditorAction): EditorState {
+  if (action.type === 'undo' || action.type === 'redo') return travel(state, action.type)
+
+  const next = edit(state, action)
+  if (next.schematic === state.schematic) return { ...next, lastEdit: action.type === 'select' ? state.lastEdit : undefined }
+
+  const key = groupKey(action)
+  if (key !== undefined && key === state.lastEdit) {
+    // Same gesture as the last edit: the drawing before it is already saved.
+    return { ...next, past: state.past, future: [], lastEdit: key }
+  }
+  return { ...next, past: [...state.past, state.schematic].slice(-HISTORY_LIMIT), future: [], lastEdit: key }
+}
+
+function groupKey(action: EditorAction): string | undefined {
+  switch (action.type) {
+    case 'setValue':
+    case 'setInitial':
+      return `${action.type}:${action.id}`
+    case 'move':
+      return action.gesture === undefined ? undefined : `move:${action.gesture}`
+    default:
+      return undefined
+  }
+}
+
+function travel(state: EditorState, direction: 'undo' | 'redo'): EditorState {
+  const [from, to] = direction === 'undo' ? [state.past, state.future] : [state.future, state.past]
+  if (from.length === 0) return state
+  const schematic = direction === 'undo' ? from[from.length - 1]! : from[0]!
+  const rest = direction === 'undo' ? from.slice(0, -1) : from.slice(1)
+  const saved = direction === 'undo' ? [state.schematic, ...to] : [...to, state.schematic]
+  const exists = (id?: string) =>
+    id !== undefined && [...schematic.parts, ...schematic.wires, ...schematic.grounds].some((e) => e.id === id)
+  return {
+    ...state,
+    schematic,
+    past: direction === 'undo' ? rest : saved,
+    future: direction === 'undo' ? saved : rest,
+    selectedId: exists(state.selectedId) ? state.selectedId : undefined,
+    wireStart: undefined,
+    lastEdit: undefined,
+  }
+}
+
+function edit(state: EditorState, action: Exclude<EditorAction, { type: 'undo' } | { type: 'redo' }>): EditorState {
   switch (action.type) {
     case 'setTool':
       return { ...state, tool: action.tool, wireStart: undefined }
@@ -94,8 +165,50 @@ export function editorReducer(state: EditorState, action: EditorAction): EditorS
       return state.wireStart ? { ...state, wireStart: undefined } : { ...state, selectedId: undefined }
 
     case 'load':
-      return initialState(action.schematic)
+      // Loading is an edit too: undo brings back what was there before.
+      return { ...initialState(action.schematic), past: state.past, future: state.future }
+
+    case 'move':
+      return move(state, action.id, action.dx, action.dy)
   }
+}
+
+/**
+ * Moves an element. Wires ending on a moved part's terminal (or a moved
+ * ground) stretch to follow it, so moving a part keeps it connected. A move
+ * that would leave the canvas (negative coordinates) is ignored.
+ */
+function move(state: EditorState, id: string, dx: number, dy: number): EditorState {
+  if (dx === 0 && dy === 0) return state
+  const { parts, wires, grounds } = state.schematic
+  const shift = (p: Point): Point => ({ x: p.x + dx, y: p.y + dy })
+  const part = parts.find((p) => p.id === id)
+  const ground = grounds.find((g) => g.id === id)
+  const wire = wires.find((w) => w.id === id)
+
+  let schematic: Schematic
+  if (part || ground) {
+    const anchors = part ? [part.a, part.b] : [ground!.at]
+    const follows = (p: Point) => anchors.some((q) => samePoint(p, q))
+    schematic = {
+      parts: parts.map((p) => (p.id === id ? { ...p, a: shift(p.a), b: shift(p.b) } : p)),
+      grounds: grounds.map((g) => (g.id === id ? { ...g, at: shift(g.at) } : g)),
+      wires: wires.map((w) =>
+        follows(w.a) || follows(w.b) ? { ...w, a: follows(w.a) ? shift(w.a) : w.a, b: follows(w.b) ? shift(w.b) : w.b } : w,
+      ),
+    }
+  } else if (wire) {
+    schematic = { ...state.schematic, wires: wires.map((w) => (w.id === id ? { ...w, a: shift(w.a), b: shift(w.b) } : w)) }
+  } else {
+    return state
+  }
+  const points = [
+    ...schematic.parts.flatMap((p) => [p.a, p.b]),
+    ...schematic.wires.flatMap((w) => [w.a, w.b]),
+    ...schematic.grounds.map((g) => g.at),
+  ]
+  if (points.some((p) => p.x < 0 || p.y < 0)) return state
+  return { ...state, schematic }
 }
 
 function clickPoint(state: EditorState, point: Point): EditorState {
