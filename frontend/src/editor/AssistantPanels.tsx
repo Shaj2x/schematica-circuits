@@ -35,7 +35,7 @@ export function ExplainPanel({ api, netlist }: { api: Api; netlist: Netlist }) {
         type="button"
         onClick={run}
         disabled={status.state === 'loading'}
-        className="rounded-md bg-sky-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-sky-700 disabled:opacity-60"
+        className="btn btn-primary font-semibold"
       >
         {status.state === 'loading' ? 'Explaining…' : 'Explain step by step'}
       </button>
@@ -115,18 +115,19 @@ export function CheckPanel({
           const result = resultFor(key)
           return (
             <label key={key} className="flex items-center gap-2">
-              <span className="w-16 font-mono text-slate-700">{label}</span>
+              <span className="readout w-16 text-slate-700">{label}</span>
               <input
                 value={inputs[key] ?? ''}
                 onChange={(e) => setInputs({ ...inputs, [key]: e.target.value })}
                 aria-invalid={invalid.includes(key)}
                 aria-label={`Your value for ${label}`}
                 placeholder={unit}
-                className={`w-full rounded-md border px-2 py-1 font-mono ${
-                  invalid.includes(key) ? 'border-red-500 bg-red-50' : 'border-slate-300'
-                }`}
+                className={`field readout w-full py-1 ${invalid.includes(key) ? '!bg-red-50 ring-1 ring-red-400' : ''}`}
               />
-              <span aria-label={result ? (result.correct ? 'correct' : 'incorrect') : undefined} className="w-4">
+              <span
+                aria-label={result ? (result.correct ? 'correct' : 'incorrect') : undefined}
+                className={`w-4 text-center font-semibold ${result?.correct ? 'text-emerald-600' : 'text-red-600'} ${result ? 'tooltip-pop' : ''}`}
+              >
                 {result ? (result.correct ? '✓' : '✗') : ''}
               </span>
             </label>
@@ -136,19 +137,19 @@ export function CheckPanel({
         <button
           type="submit"
           disabled={status.state === 'loading'}
-          className="rounded-md bg-sky-600 px-3 py-1.5 font-semibold text-white hover:bg-sky-700 disabled:opacity-60"
+          className="btn btn-primary font-semibold"
         >
           {status.state === 'loading' ? 'Checking…' : 'Check my answers'}
         </button>
       </form>
       {status.state === 'error' && <ErrorBox message={status.message} />}
       {status.state === 'done' && (
-        <div className="space-y-3">
-          <ul className="space-y-2">
+        <div className="ui-enter space-y-3">
+          <ul className="ui-stagger space-y-2">
             {status.value.results
               .filter((r) => !r.correct)
               .map((r) => (
-                <li key={r.label} className="rounded-md border border-red-200 bg-red-50 p-2 text-red-900">
+                <li key={r.label} className="rounded-lg bg-red-50 p-2.5 text-red-900 ring-1 ring-red-200 ring-inset">
                   <span className="font-mono font-semibold">{r.label}</span>: you wrote{' '}
                   {formatValue(r.submitted, r.kind === 'voltage' ? 'V' : 'A')}. {r.hint}
                   {r.expected !== null && ` The correct value is ${formatValue(r.expected, r.kind === 'voltage' ? 'V' : 'A')}.`}
@@ -171,7 +172,7 @@ export function CheckPanel({
 
 function ErrorBox({ message }: { message: string }) {
   return (
-    <p role="alert" className="rounded-md border border-red-200 bg-red-50 p-2 text-sm text-red-800">
+    <p role="alert" className="ui-enter rounded-lg bg-red-50 p-2.5 text-sm text-red-800 ring-1 ring-red-200 ring-inset">
       {message}
     </p>
   )

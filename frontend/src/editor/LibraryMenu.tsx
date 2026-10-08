@@ -68,13 +68,13 @@ export function LibraryMenu({ api, schematic, netlist, onOpen }: LibraryMenuProp
         onChange={(e) => setName(e.target.value)}
         placeholder="Circuit name"
         aria-label="Circuit name"
-        className="w-40 rounded-md border border-slate-300 px-2 py-1"
+        className="field w-40 py-1.5"
       />
-      <button type="button" onClick={() => save(false)} className="rounded-md bg-slate-800 px-3 py-1 font-medium text-white hover:bg-slate-700">
+      <button type="button" onClick={() => save(false)} className="btn btn-dark">
         {current ? 'Save' : 'Save to server'}
       </button>
       {current && (
-        <button type="button" onClick={() => save(true)} className="rounded-md px-2 py-1 text-slate-600 hover:bg-slate-100">
+        <button type="button" onClick={() => save(true)} className="btn btn-ghost">
           Save as new
         </button>
       )}
@@ -84,7 +84,7 @@ export function LibraryMenu({ api, schematic, netlist, onOpen }: LibraryMenuProp
         onFocus={refresh}
         onMouseDown={refresh}
         onChange={(e) => e.target.value && open(e.target.value)}
-        className="rounded-md border border-slate-300 bg-white px-2 py-1"
+        className="field py-1.5"
       >
         <option value="" disabled>
           Open…
@@ -97,7 +97,7 @@ export function LibraryMenu({ api, schematic, netlist, onOpen }: LibraryMenuProp
         {saved?.length === 0 && <option disabled>No saved circuits yet</option>}
       </select>
       {message && (
-        <span role="status" className="text-xs text-slate-500">
+        <span role="status" className="ui-enter text-xs text-slate-500">
           {message}
         </span>
       )}

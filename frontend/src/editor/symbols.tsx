@@ -90,13 +90,12 @@ export function CurrentArrow({ a, b, forward }: { a: Point; b: Point; forward: b
     }
   }
   const [left, right] = [back(0.6), back(-0.6)]
+  // The shaft's dashes march towards the head, so the arrow reads as current
+  // flowing, not just as a label.
   return (
-    <path
-      d={`M${tail.x} ${tail.y} L${head.x} ${head.y} M${left.x} ${left.y} L${head.x} ${head.y} L${right.x} ${right.y}`}
-      fill="none"
-      className="stroke-amber-600"
-      strokeWidth={2}
-      data-testid="current-arrow"
-    />
+    <g className="stroke-amber-600" fill="none" strokeWidth={2} strokeLinecap="round" data-testid="current-arrow">
+      <path className="current-flow" d={`M${tail.x} ${tail.y} L${head.x} ${head.y}`} />
+      <path d={`M${left.x} ${left.y} L${head.x} ${head.y} L${right.x} ${right.y}`} strokeLinejoin="round" />
+    </g>
   )
 }

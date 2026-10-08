@@ -106,7 +106,7 @@ export function Canvas({ state, dispatch, simulation, diagnosis, solution, hover
             onPointerEnter={() => node && onHover({ kind: 'node', node, at: midpoint(wire.a, wire.b) })}
             onPointerLeave={() => onHover(undefined)}
           >
-            <line x1={a.x} y1={a.y} x2={b.x} y2={b.y} className={color} strokeWidth={2.5} strokeLinecap="round" />
+            <line x1={a.x} y1={a.y} x2={b.x} y2={b.y} className={`${color} transition-[stroke] duration-150`} strokeWidth={2.5} strokeLinecap="round" />
             {/* Wide invisible stroke: a forgiving hover and click target. */}
             <line x1={a.x} y1={a.y} x2={b.x} y2={b.y} stroke="transparent" strokeWidth={14} />
           </g>
@@ -160,7 +160,7 @@ export function Canvas({ state, dispatch, simulation, diagnosis, solution, hover
             onPointerEnter={() => onHover({ kind: 'part', id: part.id })}
             onPointerLeave={() => onHover(undefined)}
           >
-            <g transform={partTransform(part.a, part.b)} className={color} strokeWidth={2.5} strokeLinejoin="round">
+            <g transform={partTransform(part.a, part.b)} className={`${color} transition-[stroke] duration-150`} strokeWidth={2.5} strokeLinejoin="round">
               <PartBody kind={part.kind} />
               <rect x={0} y={-20} width={GRID * PART_LENGTH} height={40} fill="transparent" stroke="none" />
             </g>
@@ -304,7 +304,7 @@ function Tooltip({
   const x = Math.min(Math.max(place(at.x, direction.x, width, 10), minX), maxX)
   const y = Math.min(Math.max(place(at.y, direction.y, height, 10), minY), maxY)
   return (
-    <g pointerEvents="none" role="tooltip">
+    <g pointerEvents="none" role="tooltip" className="tooltip-pop">
       <rect x={x} y={y} width={width} height={height} rx={6} className="fill-slate-900/90" />
       {lines.map((line, i) => (
         <text key={i} x={x + 8} y={y + 18 + i * 16} className="fill-white font-mono text-[12px]">

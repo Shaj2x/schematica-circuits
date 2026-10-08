@@ -27,7 +27,7 @@ export function Inspector({ schematic, selectedId, dispatch, connectivity, solut
     const isWire = schematic.wires.some((w) => w.id === selectedId)
     return (
       <section aria-label="Selection" className="space-y-3">
-        <h2 className="font-semibold text-slate-800">
+        <h2 className="text-[13px] font-semibold tracking-[-0.01em] text-slate-900">
           {selectedId} <span className="font-normal text-slate-500">· {isWire ? 'Wire' : 'Ground'}</span>
         </h2>
         <DeleteButton dispatch={dispatch} />
@@ -36,19 +36,30 @@ export function Inspector({ schematic, selectedId, dispatch, connectivity, solut
   }
 
   return (
-    <section aria-label="Help" className="space-y-2 text-sm text-slate-600">
-      <h2 className="font-semibold text-slate-800">Build a circuit</h2>
-      <ul className="list-disc space-y-1 pl-5">
-        <li>Pick a part (1–5: R, V, I, C, L) and click the grid to place it. R rotates.</li>
-        <li>Wire tool (W): click point to point. Esc, or clicking the last point again, ends the wire.</li>
-        <li>Add a ground (G). Every circuit needs one.</li>
-        <li>Press <b>Solve</b>, then hover wires and parts to read voltages and currents.</li>
-        <li>
-          Switch to <b>Transient</b> to watch capacitors and inductors over time. Hover the plot to move the time
-          cursor; the circuit readouts follow it.
-        </li>
-        <li>Select a part to edit its value; the slider re-solves as you drag.</li>
-      </ul>
+    <section aria-label="Help" className="space-y-3 text-sm text-slate-600">
+      <h2 className="text-[13px] font-semibold tracking-[-0.01em] text-slate-900">Build a circuit</h2>
+      <dl className="grid grid-cols-[auto_1fr] items-baseline gap-x-3 gap-y-2">
+        <dt className="flex gap-1">
+          <kbd>1</kbd>–<kbd>5</kbd>
+        </dt>
+        <dd>Place a resistor, source, capacitor or inductor. <kbd>R</kbd> rotates.</dd>
+        <dt>
+          <kbd>W</kbd>
+        </dt>
+        <dd>Wire point to point. <kbd>Esc</kbd> or the last point again ends it.</dd>
+        <dt>
+          <kbd>G</kbd>
+        </dt>
+        <dd>Ground. Every circuit needs one.</dd>
+        <dt>
+          <kbd>S</kbd>
+        </dt>
+        <dd>Select a part to edit its value; the slider re-solves as you drag.</dd>
+      </dl>
+      <p className="text-xs leading-relaxed text-slate-500">
+        Press <b className="font-medium text-slate-700">Solve</b>, then hover wires and parts to read voltages and
+        currents. <b className="font-medium text-slate-700">Transient</b> plots capacitors and inductors over time.
+      </p>
     </section>
   )
 }
@@ -109,7 +120,7 @@ function PartInspector({
 
   return (
     <section aria-label={`${part.id} properties`} className="space-y-4">
-      <h2 className="font-semibold text-slate-800">
+      <h2 className="text-[13px] font-semibold tracking-[-0.01em] text-slate-900">
         {part.id} <span className="font-normal text-slate-500">· {info.label}</span>
       </h2>
 
@@ -128,8 +139,8 @@ function PartInspector({
           onKeyDown={(e) => e.key === 'Enter' && commitText()}
           aria-invalid={invalid}
           aria-describedby={invalid ? 'part-value-error' : undefined}
-          className={`w-full rounded-md border px-2.5 py-1.5 font-mono text-sm ${
-            invalid ? 'border-red-500 bg-red-50' : 'border-slate-300'
+          className={`field readout w-full ${
+            invalid ? '!bg-red-50 ring-1 ring-red-400' : ''
           }`}
         />
         {invalid && (
@@ -142,7 +153,7 @@ function PartInspector({
       <div className="space-y-1">
         <label htmlFor="part-slider" className="flex justify-between text-sm text-slate-600">
           <span>Adjust</span>
-          <span className="font-mono">{formatValue(part.value, info.unit)}</span>
+          <span className="readout text-slate-900">{formatValue(part.value, info.unit)}</span>
         </label>
         <input
           id="part-slider"
@@ -167,13 +178,13 @@ function PartInspector({
       </div>
 
       {current !== undefined && va !== undefined && vb !== undefined && (
-        <dl className="grid grid-cols-2 gap-y-1 rounded-md bg-slate-50 p-3 text-sm">
+        <dl className="ui-enter grid grid-cols-2 gap-y-1.5 rounded-lg bg-slate-900/[0.03] p-3 text-sm ring-1 ring-slate-900/[0.04] ring-inset">
           <dt className="text-slate-500">Current</dt>
-          <dd className="text-right font-mono">{formatValue(current, 'A')}</dd>
+          <dd className="readout text-right text-slate-900">{formatValue(current, 'A')}</dd>
           <dt className="text-slate-500">Voltage across</dt>
-          <dd className="text-right font-mono">{formatValue(va - vb, 'V')}</dd>
+          <dd className="readout text-right text-slate-900">{formatValue(va - vb, 'V')}</dd>
           <dt className="text-slate-500">Power absorbed</dt>
-          <dd className="text-right font-mono">{formatValue((va - vb) * current, 'W')}</dd>
+          <dd className="readout text-right text-slate-900">{formatValue((va - vb) * current, 'W')}</dd>
         </dl>
       )}
 
@@ -185,14 +196,14 @@ function PartInspector({
         <button
           type="button"
           onClick={() => dispatch({ type: 'flip', id: part.id })}
-          className="rounded-md border border-slate-300 px-2.5 py-1.5 text-sm hover:bg-slate-50"
+          className="btn btn-secondary"
         >
           {flipLabel}
         </button>
         <button
           type="button"
           onClick={() => dispatch({ type: 'rotate' })}
-          className="rounded-md border border-slate-300 px-2.5 py-1.5 text-sm hover:bg-slate-50"
+          className="btn btn-secondary"
         >
           Rotate
         </button>
@@ -207,7 +218,7 @@ function DeleteButton({ dispatch }: { dispatch: Dispatch<EditorAction> }) {
     <button
       type="button"
       onClick={() => dispatch({ type: 'deleteSelected' })}
-      className="rounded-md border border-red-200 px-2.5 py-1.5 text-sm text-red-700 hover:bg-red-50"
+      className="btn btn-ghost text-red-700 hover:!bg-red-50 hover:!text-red-800"
     >
       Delete
     </button>
@@ -245,8 +256,8 @@ function InitialCondition({ part, dispatch }: { part: Part; dispatch: Dispatch<E
         onBlur={commit}
         onKeyDown={(e) => e.key === 'Enter' && commit()}
         aria-invalid={invalid}
-        className={`w-full rounded-md border px-2.5 py-1.5 font-mono text-sm ${
-          invalid ? 'border-red-500 bg-red-50' : 'border-slate-300'
+        className={`field readout w-full ${
+          invalid ? '!bg-red-50 ring-1 ring-red-400' : ''
         }`}
       />
       <p className="text-xs text-slate-400">
