@@ -180,6 +180,43 @@ source takes two clicks. The design of the pipeline is in
 The canvas grows to fit what is drawn (`canvasSize`), because a recognized
 circuit can be wider than the default 20 × 12 grid.
 
+## Visual design and motion
+
+All styling comes from one small set of tokens in `src/index.css`: type
+stacks, three shadow depths (card, raised, float) and two easing curves.
+Shared component classes (`.btn` and its variants, `.field`, `.readout`,
+`kbd`) live in Tailwind's `components` layer, so a utility on an element can
+still override them.
+
+- **Readouts use tabular figures** (`.readout`), so values that update live
+  while a slider is dragged don't jiggle as digit widths change.
+- **The header is translucent** (`backdrop-filter`) and sticky: a floating
+  layer over the page, not an opaque strip.
+
+Motion is used only where it has a job. Each case was checked against how
+often it happens:
+
+| What | Purpose | How |
+|------|---------|-----|
+| Button press | Feedback | `scale(0.97)`, 160 ms, strong ease-out, on `:active` (pointer-down) |
+| DC/Transient, sidebar tabs | State indication | `Segmented`: a clipped copy of the control slides between segments (`clip-path`, 250 ms ease-in-out), so the pill and the label colour move together |
+| Photo panel, review list, answers, errors | Preventing a jarring change | `@starting-style`: fade in and rise 6 px, 220 ms ease-out, with no JS state |
+| Explanation steps, check results | Spatial continuity for a list the user asked for | 40 ms stagger, capped at 200 ms |
+| Canvas tooltips | Feedback, seen many times a minute | 125 ms opacity and `scale(0.97)`: barely there |
+| Current arrow | Explanation: which way current flows | Dashes march along the shaft (linear, constant motion) |
+| Photo recognition | Status, then delight on a rare event | A beam sweeps the photo while waiting, then detections appear one by one where they were found |
+
+**Deliberately not animated:** tool switching and part placement. They are
+driven by keyboard shortcuts, many times a minute, and any motion there
+would only lag. Values in the results tables don't animate either, because
+the user is reading them.
+
+Every animation uses `transform`, `opacity` or `clip-path` (no layout
+properties). Hover effects use Tailwind's `hover:` variant, which only
+applies on devices that can really hover. Under
+`prefers-reduced-motion: reduce`, movement is dropped and the fades that
+explain a change are kept; the tab indicator jumps instead of sliding.
+
 ## Known limitations
 
 - Parts cannot be dragged; delete and re-place instead.

@@ -7,6 +7,7 @@ import { Inspector } from './editor/Inspector'
 import { LibraryMenu } from './editor/LibraryMenu'
 import { PhotoImport, ReviewList } from './editor/PhotoImport'
 import { Results } from './editor/Results'
+import { Segmented } from './editor/Segmented'
 import { type Signal, type SignalKind, defaultSignals, pruneSignals, toggleSignal } from './editor/signals'
 import { Toolbar } from './editor/Toolbar'
 import { TOOL_KEYS } from './editor/tools'
@@ -22,11 +23,11 @@ import type { Solver } from './solver'
 type Mode = Analysis['mode']
 type Panel = 'results' | 'explain' | 'check'
 
-const PANELS: [Panel, string][] = [
+const PANELS = [
   ['results', 'Results'],
   ['explain', 'Explain'],
   ['check', 'Check my work'],
-]
+] as const satisfies readonly (readonly [Panel, string])[]
 
 /**
  * The editor. It receives the solver and the backend client as props instead
@@ -134,27 +135,35 @@ export default function App({ solver, api = httpApi }: { solver: Solver; api?: A
   }, [])
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900">
-      <header className="border-b border-slate-200 bg-white">
-        <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-3 px-4 py-3">
-          <h1 className="text-lg font-bold tracking-tight">Schematica</h1>
-          <p className="hidden text-sm text-slate-500 lg:block">
-            Draw a circuit, solve it at DC or over time, and see every voltage and current.
-          </p>
+    <div className="min-h-screen text-slate-900">
+      {/* Translucent chrome: a floating layer over the page, not an opaque strip. */}
+      <header className="sticky top-0 z-20 border-b border-slate-900/[0.06] bg-white/70 backdrop-blur-xl backdrop-saturate-150">
+        <div className="mx-auto flex max-w-[90rem] flex-wrap items-center gap-3 px-5 py-2.5">
+          <div className="flex items-center gap-2.5">
+            <LogoMark />
+            <div className="leading-tight">
+              <h1 className="text-[15px] font-semibold tracking-[-0.01em]">Schematica</h1>
+              <p className="hidden text-xs text-slate-500 md:block">Draw it, solve it, see every voltage and current.</p>
+            </div>
+          </div>
           <button
             type="button"
             onClick={() => setPhotoOpen((open) => !open)}
             aria-expanded={photoOpen}
-            className="rounded-md border border-sky-300 px-3 py-1 text-sm font-medium text-sky-700 hover:bg-sky-50"
+            className={`btn ml-2 ${photoOpen ? 'bg-sky-50 text-sky-700 ring-1 ring-sky-200' : 'btn-secondary'}`}
           >
+            <svg viewBox="0 0 16 16" width={15} height={15} fill="none" stroke="currentColor" strokeWidth={1.5} aria-hidden>
+              <path d="M2 5.5A1.5 1.5 0 0 1 3.5 4h1.3l1-1.5h4.4l1 1.5h1.3A1.5 1.5 0 0 1 14 5.5v6A1.5 1.5 0 0 1 12.5 13h-9A1.5 1.5 0 0 1 2 11.5z" strokeLinejoin="round" />
+              <circle cx="8" cy="8.3" r="2.4" />
+            </svg>
             From photo
           </button>
           <LibraryMenu api={api} schematic={state.schematic} netlist={connectivity.netlist} onOpen={replaceDrawing} />
         </div>
       </header>
 
-      <main className="mx-auto grid max-w-7xl gap-4 p-4 lg:grid-cols-[1fr_20rem]">
-        <div className="space-y-3">
+      <main className="mx-auto grid max-w-[90rem] items-start gap-5 px-5 py-5 lg:grid-cols-[minmax(0,1fr)_22rem]">
+        <div className="min-w-0 space-y-3">
           {photoOpen && (
             <PhotoImport
               api={api}
@@ -187,7 +196,12 @@ export default function App({ solver, api = httpApi }: { solver: Solver; api?: A
             onLoadExample={loadExample}
             onClear={() => replaceDrawing(emptySchematic)}
           />
-          <div className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
+          <div className="relative overflow-hidden rounded-xl bg-white shadow-[var(--shadow-card)]">
+            {state.schematic.parts.length === 0 && state.schematic.wires.length === 0 && (
+              <p className="ui-enter pointer-events-none absolute inset-x-0 top-1/2 -translate-y-1/2 text-center text-sm text-slate-400">
+                Pick a part from the toolbar (or press <kbd>1</kbd>–<kbd>5</kbd>) and click the grid to place it.
+              </p>
+            )}
             <Canvas
               state={state}
               dispatch={dispatch}
@@ -200,7 +214,7 @@ export default function App({ solver, api = httpApi }: { solver: Solver; api?: A
           </div>
 
           {mode === 'transient' && transient && (
-            <section aria-label="Waveforms" className="space-y-4 rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+            <section aria-label="Waveforms" className="ui-enter space-y-4 rounded-xl bg-white p-4 shadow-[var(--shadow-card)]">
               {voltageSeries.length === 0 && currentSeries.length === 0 && (
                 <p className="text-sm text-slate-500">Choose node voltages or branch currents to plot.</p>
               )}
@@ -228,33 +242,20 @@ export default function App({ solver, api = httpApi }: { solver: Solver; api?: A
           )}
         </div>
 
-        <aside className="space-y-6 rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
-          <Inspector
-            schematic={state.schematic}
-            selectedId={state.selectedId}
-            dispatch={dispatch}
-            connectivity={simulation.connectivity}
-            solution={solution}
-          />
-          <hr className="border-slate-200" />
+        <aside className="space-y-3">
+          <div className="rounded-xl bg-white p-4 shadow-[var(--shadow-card)]">
+            <Inspector
+              schematic={state.schematic}
+              selectedId={state.selectedId}
+              dispatch={dispatch}
+              connectivity={simulation.connectivity}
+              solution={solution}
+            />
+          </div>
+          <div className="rounded-xl bg-white p-4 shadow-[var(--shadow-card)]">
           {mode === 'dc' ? (
             <div className="space-y-4">
-              <div role="tablist" aria-label="Sidebar" className="flex gap-1 rounded-lg bg-slate-100 p-1 text-sm">
-                {PANELS.map(([id, label]) => (
-                  <button
-                    key={id}
-                    type="button"
-                    role="tab"
-                    aria-selected={panel === id}
-                    onClick={() => setPanel(id)}
-                    className={`flex-1 rounded-md px-2 py-1 ${
-                      panel === id ? 'bg-white text-sky-700 shadow-sm' : 'text-slate-600 hover:text-slate-900'
-                    }`}
-                  >
-                    {label}
-                  </button>
-                ))}
-              </div>
+              <Segmented kind="tabs" label="Sidebar" options={PANELS} value={panel} onChange={setPanel} />
               {panel === 'results' && (
                 <Results live={live} simulation={simulation} diagnosis={diagnosis} onHover={setHover} />
               )}
@@ -280,8 +281,33 @@ export default function App({ solver, api = httpApi }: { solver: Solver; api?: A
               onResetCursor={cursor === undefined ? undefined : () => setCursor(undefined)}
             />
           )}
+          </div>
         </aside>
       </main>
     </div>
+  )
+}
+
+/** A resistor zigzag on an accent tile: the product in one glyph. */
+function LogoMark() {
+  return (
+    <svg viewBox="0 0 32 32" width={30} height={30} aria-hidden className="shrink-0">
+      <defs>
+        <linearGradient id="logo-tile" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stopColor="#0ea5e9" />
+          <stop offset="1" stopColor="#4f46e5" />
+        </linearGradient>
+      </defs>
+      <rect width="32" height="32" rx="8" fill="url(#logo-tile)" />
+      <rect x="0.5" y="0.5" width="31" height="31" rx="7.5" fill="none" stroke="white" strokeOpacity="0.2" />
+      <path
+        d="M4 16h5l2-5 3 10 3-10 3 10 2-5h6"
+        fill="none"
+        stroke="white"
+        strokeWidth="2.2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
   )
 }

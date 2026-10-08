@@ -42,7 +42,7 @@ describe('Explain tab', () => {
     await user.click(screen.getByRole('button', { name: 'Explain step by step' }))
 
     const panel = screen.getByRole('region', { name: 'Explanation' })
-    expect(within(panel).getByText('1. KCL at node n2')).toBeTruthy()
+    expect(within(panel).getByRole('listitem').textContent).toMatch(/^01KCL at node n2/)
     expect(within(panel).getByText('(v(n2) − 10 V) / 1 kΩ + v(n2) / 2 kΩ = 0')).toBeTruthy()
     expect(within(panel).getByText('Standard working')).toBeTruthy()
     // The netlist sent is the one derived from the starter divider.

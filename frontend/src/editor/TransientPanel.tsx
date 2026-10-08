@@ -50,8 +50,8 @@ export function TransientPanel(props: TransientPanelProps) {
     <div className="space-y-4 text-sm">
       <section aria-label="Transient settings" className="space-y-2">
         <div className="flex items-baseline justify-between">
-          <h2 className="font-semibold text-slate-800">Transient analysis</h2>
-          <button type="button" onClick={onSuggest} className="text-xs text-sky-700 hover:underline">
+          <h2 className="text-[13px] font-semibold tracking-[-0.01em] text-slate-900">Transient analysis</h2>
+          <button type="button" onClick={onSuggest} className="btn btn-ghost -my-1 px-2 py-0.5 text-xs text-sky-700">
             Suggest settings
           </button>
         </div>
@@ -72,7 +72,7 @@ export function TransientPanel(props: TransientPanelProps) {
           <select
             value={settings.method}
             onChange={(e) => onSettings({ ...settings, method: e.target.value as TransientSettings['method'] })}
-            className="rounded-md border border-slate-300 bg-white px-2 py-1 text-slate-800"
+            className="field py-1"
           >
             <option value="trapezoidal">Trapezoidal (2nd order)</option>
             <option value="backward_euler">Backward Euler (1st order)</option>
@@ -86,7 +86,7 @@ export function TransientPanel(props: TransientPanelProps) {
 
       {!live && <p className="text-slate-500">Press Solve to run the simulation. It re-runs live as you edit.</p>}
       {live && result && !result.ok && (
-        <div role="alert" className="rounded-md border border-red-200 bg-red-50 p-3 text-red-800">
+        <div role="alert" className="ui-enter rounded-lg bg-red-50 p-3 text-red-800 ring-1 ring-red-200 ring-inset">
           <p className="font-semibold">Can’t simulate this circuit</p>
           <p className="mt-1">{diagnosis?.message ?? result.error.message}</p>
         </div>
@@ -103,10 +103,10 @@ export function TransientPanel(props: TransientPanelProps) {
 
       {sample && selected.length > 0 && (
         <table className="w-full" aria-label="Values at cursor">
-          <caption className="mb-1 text-left font-semibold text-slate-800">
+          <caption className="mb-1.5 text-left text-[11px] font-semibold tracking-[0.06em] text-slate-500 uppercase">
             At t = {formatValue(sample.time, 's')}
             {onResetCursor && (
-              <button type="button" onClick={onResetCursor} className="ml-2 text-xs font-normal text-sky-700 hover:underline">
+              <button type="button" onClick={onResetCursor} className="ml-2 text-xs font-medium tracking-normal text-sky-700 normal-case hover:underline">
                 Show final values
               </button>
             )}
@@ -117,10 +117,10 @@ export function TransientPanel(props: TransientPanelProps) {
                 s.kind === 'voltage' ? sample.solution.node_voltages[s.name] : sample.solution.branch_currents[s.name]
               return (
                 <tr key={signalKey(s)}>
-                  <th scope="row" className="py-0.5 text-left font-normal text-slate-600">
+                  <th scope="row" className="py-1 text-left font-normal text-slate-600">
                     {s.kind === 'voltage' ? `v(${s.name})` : `i(${s.name})`}
                   </th>
-                  <td className="text-right font-mono">
+                  <td className="readout text-right text-slate-900">
                     {value === undefined ? '—' : formatValue(value, s.kind === 'voltage' ? 'V' : 'A')}
                   </td>
                 </tr>
@@ -151,8 +151,8 @@ function SignalPicker({
   if (names.length === 0) return null
   return (
     <fieldset className="space-y-1">
-      <legend className="font-semibold text-slate-800">
-        {title} <span className="font-normal text-slate-500">(up to {MAX_SIGNALS_PER_CHART})</span>
+      <legend className="text-[11px] font-semibold tracking-[0.06em] text-slate-500 uppercase">
+        {title} <span className="font-normal tracking-normal normal-case">(up to {MAX_SIGNALS_PER_CHART})</span>
       </legend>
       <div className="flex flex-wrap gap-x-3 gap-y-1">
         {names.map((name) => {
@@ -209,7 +209,7 @@ function SecondsInput({ label, value, onChange }: { label: string; value: number
         onBlur={commit}
         onKeyDown={(e) => e.key === 'Enter' && commit()}
         aria-invalid={invalid}
-        className={`w-full rounded-md border px-2 py-1 font-mono ${invalid ? 'border-red-500 bg-red-50' : 'border-slate-300'}`}
+        className={`field readout w-full py-1 ${invalid ? '!bg-red-50 ring-1 ring-red-400' : ''}`}
       />
     </label>
   )
