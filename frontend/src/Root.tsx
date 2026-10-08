@@ -13,5 +13,6 @@ export default function Root() {
 
   if (error) return <p className="p-8 text-red-700">Could not load the solver: {error}</p>
   if (!solver) return <p className="p-8 text-slate-500">Loading solver…</p>
-  return <App solver={solver} />
+  // The static website build sets VITE_STATIC=1: no server behind it.
+  return <App solver={solver} backend={import.meta.env.VITE_STATIC !== '1'} />
 }

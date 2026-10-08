@@ -6,6 +6,10 @@ step.
 
 > **Status:** in development. You can draw circuits or start from a photo of one, solve them at DC or over time with live plots, save them, get step-by-step explanations and check your own answers. Docker, CI and benchmarks are next.
 
+**Try it:** https://shaj2x.github.io/schematica-circuits/ (browser-only demo: drawing, the
+WebAssembly solver and live plots. Saving, explanations and photo input need the backend; see
+*Running it* below.)
+
 ## Roadmap
 
 | Phase | Scope | Status |
@@ -49,6 +53,12 @@ without an API key, from a deterministic template. Set `ANTHROPIC_API_KEY`
 in `backend/.env` to have Claude write them instead. Photo upload needs a
 trained detector in `ml/weights/model.onnx`; [ml/README.md](ml/README.md)
 explains how to train one on Colab in about an hour.
+
+### The website
+
+`.github/workflows/pages.yml` builds the frontend with `VITE_STATIC=1` (no backend: server
+features explain themselves instead of failing) and publishes it to GitHub Pages on every push
+to `main`. One-time setup: Settings → Pages → Source: **GitHub Actions**.
 
 ## Tests and checks
 

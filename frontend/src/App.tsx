@@ -34,7 +34,15 @@ const PANELS = [
  * of creating them itself, so tests can pass in a solver initialized from
  * disk and a fake API, and the component never deals with async loading.
  */
-export default function App({ solver, api = httpApi }: { solver: Solver; api?: Api }) {
+/** Where the hosted demo points people for the features that need the backend. */
+const REPO_URL = 'https://github.com/Shaj2x/schematica-circuits'
+
+/**
+ * `backend` is false on the static website (GitHub Pages), where only the
+ * browser half runs: drawing, the WebAssembly solver and the plots. Features
+ * that need the server say so instead of failing with a network error.
+ */
+export default function App({ solver, api = httpApi, backend = true }: { solver: Solver; api?: Api; backend?: boolean }) {
   const [state, dispatch] = useReducer(editorReducer, voltageDivider.schematic, initialState)
   const [live, setLive] = useState(false)
   const [hover, setHover] = useState<Hover>()
@@ -146,19 +154,33 @@ export default function App({ solver, api = httpApi }: { solver: Solver; api?: A
               <p className="hidden text-xs text-slate-500 md:block">Draw it, solve it, see every voltage and current.</p>
             </div>
           </div>
-          <button
-            type="button"
-            onClick={() => setPhotoOpen((open) => !open)}
-            aria-expanded={photoOpen}
-            className={`btn ml-2 ${photoOpen ? 'bg-sky-50 text-sky-700 ring-1 ring-sky-200' : 'btn-secondary'}`}
-          >
-            <svg viewBox="0 0 16 16" width={15} height={15} fill="none" stroke="currentColor" strokeWidth={1.5} aria-hidden>
-              <path d="M2 5.5A1.5 1.5 0 0 1 3.5 4h1.3l1-1.5h4.4l1 1.5h1.3A1.5 1.5 0 0 1 14 5.5v6A1.5 1.5 0 0 1 12.5 13h-9A1.5 1.5 0 0 1 2 11.5z" strokeLinejoin="round" />
-              <circle cx="8" cy="8.3" r="2.4" />
-            </svg>
-            From photo
-          </button>
-          <LibraryMenu api={api} schematic={state.schematic} netlist={connectivity.netlist} onOpen={replaceDrawing} />
+          {backend ? (
+            <>
+              <button
+                type="button"
+                onClick={() => setPhotoOpen((open) => !open)}
+                aria-expanded={photoOpen}
+                className={`btn ml-2 ${photoOpen ? 'bg-sky-50 text-sky-700 ring-1 ring-sky-200' : 'btn-secondary'}`}
+              >
+                <svg viewBox="0 0 16 16" width={15} height={15} fill="none" stroke="currentColor" strokeWidth={1.5} aria-hidden>
+                  <path d="M2 5.5A1.5 1.5 0 0 1 3.5 4h1.3l1-1.5h4.4l1 1.5h1.3A1.5 1.5 0 0 1 14 5.5v6A1.5 1.5 0 0 1 12.5 13h-9A1.5 1.5 0 0 1 2 11.5z" strokeLinejoin="round" />
+                  <circle cx="8" cy="8.3" r="2.4" />
+                </svg>
+                From photo
+              </button>
+              <LibraryMenu api={api} schematic={state.schematic} netlist={connectivity.netlist} onOpen={replaceDrawing} />
+            </>
+          ) : (
+            <p className="ml-auto flex items-center gap-2 text-xs text-slate-500">
+              <span className="rounded-full bg-sky-50 px-2 py-0.5 font-medium text-sky-700 ring-1 ring-sky-200 ring-inset">
+                Browser demo
+              </span>
+              <span className="hidden sm:inline">The solver runs on your device in WebAssembly.</span>
+              <a href={REPO_URL} className="font-medium text-slate-700 underline-offset-2 hover:underline">
+                Source on GitHub
+              </a>
+            </p>
+          )}
         </div>
       </header>
 
@@ -259,8 +281,9 @@ export default function App({ solver, api = httpApi }: { solver: Solver; api?: A
               {panel === 'results' && (
                 <Results live={live} simulation={simulation} diagnosis={diagnosis} onHover={setHover} />
               )}
-              {panel === 'explain' && <ExplainPanel key={netlistKey} api={api} netlist={connectivity.netlist} />}
-              {panel === 'check' && (
+              {panel !== 'results' && !backend && <NeedsBackend feature={panel === 'explain' ? 'Step-by-step explanations' : 'Checking your answers'} />}
+              {panel === 'explain' && backend && <ExplainPanel key={netlistKey} api={api} netlist={connectivity.netlist} />}
+              {panel === 'check' && backend && (
                 <CheckPanel key={netlistKey} api={api} netlist={connectivity.netlist} nodes={nodes} partIds={partIds} />
               )}
             </div>
@@ -309,5 +332,23 @@ function LogoMark() {
         strokeLinejoin="round"
       />
     </svg>
+  )
+}
+
+function NeedsBackend({ feature }: { feature: string }) {
+  return (
+    <div className="ui-enter space-y-2 text-sm text-slate-600">
+      <p>
+        <b className="font-medium text-slate-800">{feature}</b> come from the Schematica server, which this browser-only
+        demo doesn’t include. Everything else (drawing, solving and the plots) works here.
+      </p>
+      <p>
+        To try it, run the app locally:{' '}
+        <a href={`${REPO_URL}#running-it`} className="font-medium text-sky-700 underline-offset-2 hover:underline">
+          setup instructions
+        </a>
+        .
+      </p>
+    </div>
   )
 }

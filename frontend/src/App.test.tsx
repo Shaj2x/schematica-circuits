@@ -178,3 +178,21 @@ describe('App', () => {
 
   })
 })
+
+describe('browser-only website', () => {
+  it('hides server features and says why instead of failing', async () => {
+    const user = userEvent.setup()
+    render(<App solver={testSolver()} backend={false} />)
+    expect(screen.queryByRole('button', { name: 'From photo' })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Save to server' })).toBeNull()
+    expect(screen.getByText('Browser demo')).toBeTruthy()
+
+    await user.click(screen.getByRole('tab', { name: 'Explain' }))
+    expect(document.body.textContent).toContain('Step-by-step explanations come from the Schematica server')
+
+    // The solver still works.
+    await user.click(screen.getByRole('button', { name: 'Solve' }))
+    await user.click(screen.getByRole('tab', { name: 'Results' }))
+    expect(screen.getByTestId('solve-status').textContent).toMatch(/Solved/)
+  })
+})
