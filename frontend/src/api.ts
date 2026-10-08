@@ -59,6 +59,34 @@ export interface SavedCircuit {
   updated_at: string
 }
 
+/** One symbol the detector found in a photo. */
+export interface Detection {
+  label: string
+  confidence: number
+  /** x0, y0, x1, y1 in the photo's pixels (after the server's downscaling). */
+  box: [number, number, number, number]
+  /** The editor part this detection became, if it became one. */
+  part_id: string | null
+  /** The text read as this part's value, if any. */
+  value_text: string | null
+}
+
+/** Something about a recognized circuit the user should check. */
+export interface RecognitionWarning {
+  code: string
+  message: string
+  part_ids: string[]
+}
+
+export interface Recognition {
+  image: { width: number; height: number }
+  schematic: Schematic
+  /** What the editor will derive from `schematic`; the server checked it matches the photo's wiring. */
+  netlist: Netlist
+  detections: Detection[]
+  warnings: RecognitionWarning[]
+}
+
 /** A failed request: a solver error the UI can highlight, or a plain message. */
 export class ApiError extends Error {
   readonly status: number
@@ -77,14 +105,17 @@ export interface Api {
   listCircuits(): Promise<CircuitSummary[]>
   loadCircuit(id: string): Promise<SavedCircuit>
   saveCircuit(circuit: { id?: string; name: string; netlist: Netlist; schematic: Schematic }): Promise<SavedCircuit>
+  recognize(image: Blob): Promise<Recognition>
 }
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   let response: Response
   try {
+    // A FormData body sets its own multipart Content-Type (with the boundary).
+    const json = !(init?.body instanceof FormData)
     response = await fetch(`/api${path}`, {
       ...init,
-      headers: { 'Content-Type': 'application/json', ...init?.headers },
+      headers: { ...(json && { 'Content-Type': 'application/json' }), ...init?.headers },
     })
   } catch {
     throw new ApiError('Could not reach the Schematica server. Is the backend running?', 0)
@@ -103,4 +134,9 @@ export const httpApi: Api = {
   loadCircuit: (id) => request(`/circuits/${id}`),
   saveCircuit: ({ id, ...body }) =>
     request(id ? `/circuits/${id}` : '/circuits', { method: id ? 'PUT' : 'POST', body: JSON.stringify(body) }),
+  recognize: (image) => {
+    const body = new FormData()
+    body.append('image', image)
+    return request('/recognize', { method: 'POST', body })
+  },
 }

@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useReducer, useState } from 'react'
-import { type Api, httpApi } from './api'
+import { type Api, type RecognitionWarning, httpApi } from './api'
 import { CheckPanel, ExplainPanel } from './editor/AssistantPanels'
 import { Canvas, type Hover } from './editor/Canvas'
 import { diagnose } from './editor/diagnose'
 import { Inspector } from './editor/Inspector'
 import { LibraryMenu } from './editor/LibraryMenu'
+import { PhotoImport, ReviewList } from './editor/PhotoImport'
 import { Results } from './editor/Results'
 import { type Signal, type SignalKind, defaultSignals, pruneSignals, toggleSignal } from './editor/signals'
 import { Toolbar } from './editor/Toolbar'
@@ -15,7 +16,7 @@ import { type Analysis, useSimulation } from './editor/useSimulation'
 import { WaveformChart } from './editor/WaveformChart'
 import { editorReducer, initialState } from './schematic/editor'
 import { type Example, voltageDivider } from './schematic/examples'
-import { emptySchematic, pointKey } from './schematic/model'
+import { type Schematic, emptySchematic, pointKey } from './schematic/model'
 import type { Solver } from './solver'
 
 type Mode = Analysis['mode']
@@ -43,6 +44,9 @@ export default function App({ solver, api = httpApi }: { solver: Solver; api?: A
   // Sample index under the plot crosshair; undefined shows the final sample.
   const [cursor, setCursor] = useState<number>()
   const [panel, setPanel] = useState<Panel>('results')
+  const [photoOpen, setPhotoOpen] = useState(false)
+  // What to check after loading a circuit recognized from a photo.
+  const [review, setReview] = useState<RecognitionWarning[]>()
 
   const analysis = useMemo<Analysis>(() => (mode === 'dc' ? { mode } : { mode, settings }), [mode, settings])
   const simulation = useSimulation(solver, state.schematic, live, analysis)
@@ -85,12 +89,18 @@ export default function App({ solver, api = httpApi }: { solver: Solver; api?: A
     setCursor(undefined)
   }
 
-  function loadExample(example: Example) {
-    dispatch({ type: 'load', schematic: example.schematic })
-    setMode(example.transient ? 'transient' : 'dc')
-    if (example.transient) setSettings(example.transient)
+  /** Replaces the drawing, resetting everything that belonged to the old one. */
+  function replaceDrawing(schematic: Schematic) {
+    dispatch({ type: 'load', schematic })
     setChosenSignals(null)
     setCursor(undefined)
+    setReview(undefined)
+  }
+
+  function loadExample(example: Example) {
+    replaceDrawing(example.schematic)
+    setMode(example.transient ? 'transient' : 'dc')
+    if (example.transient) setSettings(example.transient)
   }
 
   const series = (kind: SignalKind) =>
@@ -131,21 +141,42 @@ export default function App({ solver, api = httpApi }: { solver: Solver; api?: A
           <p className="hidden text-sm text-slate-500 lg:block">
             Draw a circuit, solve it at DC or over time, and see every voltage and current.
           </p>
-          <LibraryMenu
-            api={api}
-            schematic={state.schematic}
-            netlist={connectivity.netlist}
-            onOpen={(schematic) => {
-              dispatch({ type: 'load', schematic })
-              setChosenSignals(null)
-              setCursor(undefined)
-            }}
-          />
+          <button
+            type="button"
+            onClick={() => setPhotoOpen((open) => !open)}
+            aria-expanded={photoOpen}
+            className="rounded-md border border-sky-300 px-3 py-1 text-sm font-medium text-sky-700 hover:bg-sky-50"
+          >
+            From photo
+          </button>
+          <LibraryMenu api={api} schematic={state.schematic} netlist={connectivity.netlist} onOpen={replaceDrawing} />
         </div>
       </header>
 
       <main className="mx-auto grid max-w-7xl gap-4 p-4 lg:grid-cols-[1fr_20rem]">
         <div className="space-y-3">
+          {photoOpen && (
+            <PhotoImport
+              api={api}
+              onClose={() => setPhotoOpen(false)}
+              onLoad={(schematic, warnings) => {
+                replaceDrawing(schematic)
+                switchMode('dc')
+                setReview(warnings)
+                setPhotoOpen(false)
+              }}
+            />
+          )}
+          {review && (
+            <ReviewList
+              warnings={review}
+              onSelect={(id) => {
+                dispatch({ type: 'setTool', tool: 'select' })
+                dispatch({ type: 'select', id })
+              }}
+              onDismiss={() => setReview(undefined)}
+            />
+          )}
           <Toolbar
             tool={state.tool}
             dispatch={dispatch}
@@ -154,10 +185,7 @@ export default function App({ solver, api = httpApi }: { solver: Solver; api?: A
             mode={mode}
             onMode={switchMode}
             onLoadExample={loadExample}
-            onClear={() => {
-              dispatch({ type: 'load', schematic: emptySchematic })
-              setChosenSignals(null)
-            }}
+            onClear={() => replaceDrawing(emptySchematic)}
           />
           <div className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
             <Canvas

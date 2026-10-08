@@ -46,6 +46,18 @@ describe('httpApi', () => {
     await expect(promise).rejects.toThrow(/backend running/)
   })
 
+  it('uploads a photo as multipart form data', async () => {
+    const fetchMock = mockFetch(200, { schematic: {}, detections: [], warnings: [] })
+    const photo = new Blob(['png bytes'], { type: 'image/png' })
+    await httpApi.recognize(photo)
+    const [url, init] = fetchMock.mock.calls[0]!
+    expect(url).toBe('/api/recognize')
+    expect(init.body).toBeInstanceOf(FormData)
+    expect((init.body as FormData).get('image')).toBeInstanceOf(Blob)
+    // The browser must set the multipart boundary itself.
+    expect(init.headers['Content-Type']).toBeUndefined()
+  })
+
   it('passes through FastAPI error details', async () => {
     mockFetch(404, { detail: 'circuit not found' })
     await expect(httpApi.loadCircuit('x')).rejects.toThrow('circuit not found')
