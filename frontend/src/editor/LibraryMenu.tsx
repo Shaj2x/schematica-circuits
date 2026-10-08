@@ -62,13 +62,13 @@ export function LibraryMenu({ api, schematic, netlist, onOpen }: LibraryMenuProp
   }
 
   return (
-    <div className="ml-auto flex flex-wrap items-center gap-2 text-sm">
+    <div className="flex items-center gap-1.5 text-sm">
       <input
         value={name}
         onChange={(e) => setName(e.target.value)}
         placeholder="Circuit name"
         aria-label="Circuit name"
-        className="field w-40 py-1.5"
+        className="field w-32 py-1"
       />
       <button type="button" onClick={() => save(false)} className="btn btn-dark">
         {current ? 'Save' : 'Save to server'}
@@ -84,7 +84,7 @@ export function LibraryMenu({ api, schematic, netlist, onOpen }: LibraryMenuProp
         onFocus={refresh}
         onMouseDown={refresh}
         onChange={(e) => e.target.value && open(e.target.value)}
-        className="field py-1.5"
+        className="field py-1"
       >
         <option value="" disabled>
           Open…
@@ -97,7 +97,7 @@ export function LibraryMenu({ api, schematic, netlist, onOpen }: LibraryMenuProp
         {saved?.length === 0 && <option disabled>No saved circuits yet</option>}
       </select>
       {message && (
-        <span role="status" className="ui-enter text-xs text-slate-500">
+        <span role="status" className="ui-enter text-xs text-slate-400">
           {message}
         </span>
       )}

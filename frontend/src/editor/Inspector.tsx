@@ -27,8 +27,8 @@ export function Inspector({ schematic, selectedId, dispatch, connectivity, solut
     const isWire = schematic.wires.some((w) => w.id === selectedId)
     return (
       <section aria-label="Selection" className="space-y-3">
-        <h2 className="text-[13px] font-semibold tracking-[-0.01em] text-slate-900">
-          {selectedId} <span className="font-normal text-slate-500">· {isWire ? 'Wire' : 'Ground'}</span>
+        <h2 className="text-[13px] font-semibold tracking-[-0.01em] text-white">
+          {selectedId} <span className="font-normal text-slate-400">· {isWire ? 'Wire' : 'Ground'}</span>
         </h2>
         <DeleteButton dispatch={dispatch} />
       </section>
@@ -36,8 +36,8 @@ export function Inspector({ schematic, selectedId, dispatch, connectivity, solut
   }
 
   return (
-    <section aria-label="Help" className="space-y-3 text-sm text-slate-600">
-      <h2 className="text-[13px] font-semibold tracking-[-0.01em] text-slate-900">Build a circuit</h2>
+    <section aria-label="Help" className="space-y-3 text-sm text-slate-300">
+      <h2 className="text-[13px] font-semibold tracking-[-0.01em] text-white">Build a circuit</h2>
       <dl className="grid grid-cols-[auto_1fr] items-baseline gap-x-3 gap-y-2">
         <dt className="flex gap-1">
           <kbd>1</kbd>–<kbd>5</kbd>
@@ -56,9 +56,9 @@ export function Inspector({ schematic, selectedId, dispatch, connectivity, solut
         </dt>
         <dd>Select a part to edit its value; the slider re-solves as you drag.</dd>
       </dl>
-      <p className="text-xs leading-relaxed text-slate-500">
-        Press <b className="font-medium text-slate-700">Solve</b>, then hover wires and parts to read voltages and
-        currents. <b className="font-medium text-slate-700">Transient</b> plots capacitors and inductors over time.
+      <p className="text-xs leading-relaxed text-slate-400">
+        Press <b className="font-medium text-slate-200">Solve</b>, then hover wires and parts to read voltages and
+        currents. <b className="font-medium text-slate-200">Transient</b> plots capacitors and inductors over time.
       </p>
     </section>
   )
@@ -120,12 +120,12 @@ function PartInspector({
 
   return (
     <section aria-label={`${part.id} properties`} className="space-y-4">
-      <h2 className="text-[13px] font-semibold tracking-[-0.01em] text-slate-900">
-        {part.id} <span className="font-normal text-slate-500">· {info.label}</span>
+      <h2 className="text-[13px] font-semibold tracking-[-0.01em] text-white">
+        {part.id} <span className="font-normal text-slate-400">· {info.label}</span>
       </h2>
 
       <div className="space-y-1">
-        <label htmlFor="part-value" className="text-sm text-slate-600">
+        <label htmlFor="part-value" className="text-sm text-slate-300">
           Value ({info.unit})
         </label>
         <input
@@ -140,20 +140,20 @@ function PartInspector({
           aria-invalid={invalid}
           aria-describedby={invalid ? 'part-value-error' : undefined}
           className={`field readout w-full ${
-            invalid ? '!bg-red-50 ring-1 ring-red-400' : ''
+            invalid ? '!bg-red-500/10 ring-1 ring-red-400' : ''
           }`}
         />
         {invalid && (
-          <p id="part-value-error" className="text-xs text-red-600">
+          <p id="part-value-error" className="text-xs text-red-400">
             Couldn’t read “{text}”. Try 4.7k, 10m, 2.2M or 1e-3.
           </p>
         )}
       </div>
 
       <div className="space-y-1">
-        <label htmlFor="part-slider" className="flex justify-between text-sm text-slate-600">
+        <label htmlFor="part-slider" className="flex justify-between text-sm text-slate-300">
           <span>Adjust</span>
-          <span className="readout text-slate-900">{formatValue(part.value, info.unit)}</span>
+          <span className="readout text-white">{formatValue(part.value, info.unit)}</span>
         </label>
         <input
           id="part-slider"
@@ -169,22 +169,22 @@ function PartInspector({
           }}
           onPointerUp={recenter}
           onKeyUp={recenter}
-          className="w-full accent-sky-600"
+          className="w-full accent-cyan-400"
         />
-        <div className="flex justify-between font-mono text-[11px] text-slate-400">
+        <div className="flex justify-between font-mono text-[11px] text-slate-500">
           <span>{formatValue(sign * magnitude / 10, info.unit)}</span>
           <span>{formatValue(sign * magnitude * 10, info.unit)}</span>
         </div>
       </div>
 
       {current !== undefined && va !== undefined && vb !== undefined && (
-        <dl className="ui-enter grid grid-cols-2 gap-y-1.5 rounded-lg bg-slate-900/[0.03] p-3 text-sm ring-1 ring-slate-900/[0.04] ring-inset">
-          <dt className="text-slate-500">Current</dt>
-          <dd className="readout text-right text-slate-900">{formatValue(current, 'A')}</dd>
-          <dt className="text-slate-500">Voltage across</dt>
-          <dd className="readout text-right text-slate-900">{formatValue(va - vb, 'V')}</dd>
-          <dt className="text-slate-500">Power absorbed</dt>
-          <dd className="readout text-right text-slate-900">{formatValue((va - vb) * current, 'W')}</dd>
+        <dl className="ui-enter grid grid-cols-2 gap-y-1.5 rounded-lg bg-white/[0.03] p-3 text-sm ring-1 ring-white/[0.06] ring-inset">
+          <dt className="text-slate-400">Current</dt>
+          <dd className="readout text-right text-white">{formatValue(current, 'A')}</dd>
+          <dt className="text-slate-400">Voltage across</dt>
+          <dd className="readout text-right text-white">{formatValue(va - vb, 'V')}</dd>
+          <dt className="text-slate-400">Power absorbed</dt>
+          <dd className="readout text-right text-white">{formatValue((va - vb) * current, 'W')}</dd>
         </dl>
       )}
 
@@ -218,7 +218,7 @@ function DeleteButton({ dispatch }: { dispatch: Dispatch<EditorAction> }) {
     <button
       type="button"
       onClick={() => dispatch({ type: 'deleteSelected' })}
-      className="btn btn-ghost text-red-700 hover:!bg-red-50 hover:!text-red-800"
+      className="btn btn-ghost text-red-300 hover:!bg-red-500/10 hover:!text-red-200"
     >
       Delete
     </button>
@@ -243,7 +243,7 @@ function InitialCondition({ part, dispatch }: { part: Part; dispatch: Dispatch<E
   }
   return (
     <div className="space-y-1">
-      <label htmlFor="part-initial" className="text-sm text-slate-600">
+      <label htmlFor="part-initial" className="text-sm text-slate-300">
         {isCapacitor ? 'Initial voltage (V)' : 'Initial current (A)'}
       </label>
       <input
@@ -257,10 +257,10 @@ function InitialCondition({ part, dispatch }: { part: Part; dispatch: Dispatch<E
         onKeyDown={(e) => e.key === 'Enter' && commit()}
         aria-invalid={invalid}
         className={`field readout w-full ${
-          invalid ? '!bg-red-50 ring-1 ring-red-400' : ''
+          invalid ? '!bg-red-500/10 ring-1 ring-red-400' : ''
         }`}
       />
-      <p className="text-xs text-slate-400">
+      <p className="text-xs text-slate-500">
         {isCapacitor ? 'v(first terminal) − v(second) at t = 0.' : 'From the first terminal to the second at t = 0.'}{' '}
         Used by transient analysis only.
       </p>

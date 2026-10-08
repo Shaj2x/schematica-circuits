@@ -10,11 +10,11 @@ const MARKS = new Set(['text', 'junction', 'crossover'])
 function detectionStyle(d: Detection): { stroke: string; label: string } {
   if (d.part_id) {
     const label = d.value_text ? `${d.part_id} ${d.value_text}` : d.part_id
-    return { stroke: d.confidence < LOW_CONFIDENCE ? '#d97706' : '#0284c7', label }
+    return { stroke: d.confidence < LOW_CONFIDENCE ? '#fbbf24' : '#22d3ee', label }
   }
-  if (d.label === 'other') return { stroke: '#dc2626', label: 'unsupported' }
-  if (d.label === 'ground') return { stroke: '#475569', label: 'ground' }
-  return { stroke: '#94a3b8', label: MARKS.has(d.label) ? '' : d.label }
+  if (d.label === 'other') return { stroke: '#f87171', label: 'unsupported' }
+  if (d.label === 'ground') return { stroke: '#94a3b8', label: 'ground' }
+  return { stroke: '#64748b', label: MARKS.has(d.label) ? '' : d.label }
 }
 
 interface PhotoImportProps {
@@ -70,12 +70,12 @@ export function PhotoImport({ api, onLoad, onClose }: PhotoImportProps) {
     <section
       role="dialog"
       aria-label="Circuit from a photo"
-      className="ui-enter space-y-4 rounded-xl bg-white p-4 shadow-[var(--shadow-card)]"
+      className="ui-enter space-y-4 rounded-xl bg-white/[0.06] p-4 shadow-[var(--shadow-card)]"
     >
       <div className="flex flex-wrap items-center gap-3">
         <div>
-          <h2 className="text-[13px] font-semibold tracking-[-0.01em] text-slate-900">Circuit from a photo</h2>
-          <p className="text-xs text-slate-500">Dark pen on plain paper, photographed straight on, works best.</p>
+          <h2 className="text-[13px] font-semibold tracking-[-0.01em] text-white">Circuit from a photo</h2>
+          <p className="text-xs text-slate-400">Dark pen on plain paper, photographed straight on, works best.</p>
         </div>
         {preview && (
           <label className="btn btn-secondary ml-auto cursor-pointer">
@@ -101,26 +101,26 @@ export function PhotoImport({ api, onLoad, onClose }: PhotoImportProps) {
             choose(e.dataTransfer.files[0])
           }}
           className={`flex cursor-pointer flex-col items-center gap-2 rounded-lg border border-dashed px-6 py-10 text-center transition-colors duration-150 ${
-            dragging ? 'border-sky-400 bg-sky-50' : 'border-slate-300 bg-slate-50/60 hover:border-slate-400'
+            dragging ? 'border-cyan-400 bg-cyan-400/10' : 'border-white/15 bg-white/[0.02] hover:border-white/25'
           }`}
         >
-          <svg viewBox="0 0 24 24" width={28} height={28} fill="none" stroke="currentColor" strokeWidth={1.5} className="text-slate-400" aria-hidden>
+          <svg viewBox="0 0 24 24" width={28} height={28} fill="none" stroke="currentColor" strokeWidth={1.5} className="text-slate-500" aria-hidden>
             <path d="M4 16.5V18a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-1.5M12 15V4m0 0L8 8m4-4 4 4" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
-          <span className="text-sm font-medium text-slate-700">Drop a photo here, or click to choose one</span>
-          <span className="text-xs text-slate-500">PNG, JPEG or WebP, up to 15 MB</span>
+          <span className="text-sm font-medium text-slate-200">Drop a photo here, or click to choose one</span>
+          <span className="text-xs text-slate-400">PNG, JPEG or WebP, up to 15 MB</span>
           {input}
         </label>
       )}
 
       {status.kind === 'failed' && (
-        <p role="alert" className="ui-enter rounded-lg bg-red-50 p-2.5 text-sm text-red-800 ring-1 ring-red-200 ring-inset">
+        <p role="alert" className="ui-enter rounded-lg bg-red-500/10 p-2.5 text-sm text-red-200 ring-1 ring-red-400/30 ring-inset">
           {status.message}
         </p>
       )}
 
       {preview && (
-        <div className="relative max-h-[28rem] overflow-auto rounded-lg bg-slate-100 ring-1 ring-slate-900/[0.06]">
+        <div className="relative max-h-[28rem] overflow-auto rounded-lg bg-white/[0.05] ring-1 ring-white/[0.06]">
           <img
             src={preview}
             alt="Uploaded circuit"
@@ -133,7 +133,7 @@ export function PhotoImport({ api, onLoad, onClose }: PhotoImportProps) {
               </div>
               <p
                 role="status"
-                className="absolute top-3 left-1/2 -translate-x-1/2 rounded-full bg-slate-900/80 px-3 py-1 text-xs font-medium text-white backdrop-blur"
+                className="absolute top-3 left-1/2 -translate-x-1/2 rounded-full bg-ink-950/85 px-3 py-1 text-xs font-medium text-white backdrop-blur"
               >
                 Recognizing…
               </p>
@@ -178,7 +178,7 @@ export function PhotoImport({ api, onLoad, onClose }: PhotoImportProps) {
                         fontSize={Math.max(12, result.image.width / 60)}
                         fontWeight={600}
                         paintOrder="stroke"
-                        stroke="white"
+                        stroke="#05080f"
                         strokeWidth={3}
                       >
                         {label}
@@ -194,20 +194,20 @@ export function PhotoImport({ api, onLoad, onClose }: PhotoImportProps) {
 
       {result && (
         <div className="ui-enter space-y-3">
-          <p className="text-sm text-slate-700">
-            <span className="font-semibold text-slate-900">
+          <p className="text-sm text-slate-200">
+            <span className="font-semibold text-white">
               Found {partCount} part{partCount === 1 ? '' : 's'}.
             </span>{' '}
             {partCount > 0 && 'Load it into the editor to check and correct it.'}
           </p>
           {result.warnings.length > 0 && (
-            <ul className="space-y-1.5 text-sm text-amber-950">
+            <ul className="space-y-1.5 text-sm text-amber-100">
               {result.warnings.map((w) => (
                 <li key={w.code} className="flex gap-2">
                   <span aria-hidden className="mt-1.5 size-1.5 shrink-0 rounded-full bg-amber-500" />
                   <span>
                     {w.message}
-                    {w.part_ids.length > 0 && <span className="readout text-amber-800"> ({w.part_ids.join(', ')})</span>}
+                    {w.part_ids.length > 0 && <span className="readout text-amber-200"> ({w.part_ids.join(', ')})</span>}
                   </span>
                 </li>
               ))}
@@ -244,11 +244,11 @@ export function ReviewList({
   return (
     <section
       aria-label="Check the recognized circuit"
-      className="ui-enter rounded-xl bg-amber-50 p-3.5 text-sm text-amber-950 shadow-[var(--shadow-card)] ring-1 ring-amber-200/80 ring-inset"
+      className="ui-enter rounded-xl bg-amber-400/10 p-3.5 text-sm text-amber-100 shadow-[var(--shadow-card)] ring-1 ring-amber-400/25 ring-inset"
     >
       <div className="mb-1 flex items-center">
         <h2 className="font-semibold">Check the recognized circuit</h2>
-        <button type="button" onClick={onDismiss} className="btn ml-auto px-2.5 py-1 text-amber-900 hover:bg-amber-100">
+        <button type="button" onClick={onDismiss} className="btn ml-auto px-2.5 py-1 text-amber-100 hover:bg-amber-400/15">
           Done
         </button>
       </div>
@@ -264,7 +264,7 @@ export function ReviewList({
                   key={id}
                   type="button"
                   onClick={() => onSelect(id)}
-                  className="btn readout mr-1 rounded-md bg-white px-1.5 py-0 text-xs text-amber-900 ring-1 ring-amber-300 hover:bg-amber-100"
+                  className="btn readout mr-1 rounded-md bg-white/[0.06] px-1.5 py-0 text-xs text-amber-100 ring-1 ring-amber-400/40 hover:bg-amber-400/15"
                 >
                   {id}
                 </button>

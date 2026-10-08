@@ -5,7 +5,7 @@ from __future__ import annotations
 from functools import lru_cache
 from pathlib import Path
 
-from pydantic import Field, SecretStr
+from pydantic import Field, SecretStr, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -32,6 +32,20 @@ class Settings(BaseSettings):
     model_path: Path = Path(__file__).resolve().parents[2] / "ml" / "weights" / "model.onnx"
     # Uploads above this are rejected before decoding. Phone photos are 2-8 MB.
     max_upload_bytes: int = 15 * 1024 * 1024
+
+    # The built frontend (frontend/dist). When set, the API also serves the
+    # app itself, so one process and one origin run everything in production.
+    static_dir: Path | None = None
+
+    @field_validator("database_url")
+    @classmethod
+    def use_psycopg(cls, url: str) -> str:
+        # Hosting platforms hand out postgres:// or postgresql:// URLs;
+        # SQLAlchemy needs the driver named to use psycopg 3.
+        for prefix in ("postgres://", "postgresql://"):
+            if url.startswith(prefix):
+                return "postgresql+psycopg://" + url[len(prefix) :]
+        return url
 
 
 @lru_cache

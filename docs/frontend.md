@@ -182,48 +182,66 @@ circuit can be wider than the default 20 × 12 grid.
 
 ## Visual design and motion
 
-All styling comes from one small set of tokens in `src/index.css`: type
-stacks, three shadow depths (card, raised, float) and two easing curves.
-Shared component classes (`.btn` and its variants, `.field`, `.readout`,
-`kbd`) live in Tailwind's `components` layer, so a utility on an element can
-still override them.
+The editor is a dark, full-height workspace in the manner of EDA tools: a
+tool rail, a canvas that fills the window, an inspector column, and a
+waveform drawer in transient mode. Tokens live in `src/index.css`: surface
+inks (`ink-950` to `ink-700`), three depths (card, raised, float), the cyan
+accent, and two easing curves. Shared component classes (`.panel`, `.btn`
+and variants, `.field`, `.readout`, `kbd`) sit in Tailwind's `components`
+layer, so utilities on an element still win.
 
-- **Readouts use tabular figures** (`.readout`), so values that update live
-  while a slider is dragged don't jiggle as digit widths change.
-- **The header is translucent** (`backdrop-filter`) and sticky: a floating
-  layer over the page, not an opaque strip.
+**Colour carries data, and is validated.** Waveform series use the dark
+steps of the dataviz reference palette, validated as a set against the
+chart surface (adjacent CVD ΔE ≥ 8.4, every series ≥ 3:1 contrast), and
+every line is also labelled directly. Wires are coloured by node voltage on
+a one-hue blue ramp (ordinal-validated: monotone lightness, darkest step
+5.2:1 against the canvas), with a legend whenever it is on.
 
-Motion is used only where it has a job. Each case was checked against how
-often it happens:
+**The canvas frames the circuit.** Opening a circuit fits and centres the
+view on it (`fitView`); while editing the view only grows (`growView`), so
+nothing shifts under the pointer.
+
+Motion is used only where it has a job:
 
 | What | Purpose | How |
 |------|---------|-----|
-| Button press | Feedback | `scale(0.97)`, 160 ms, strong ease-out, on `:active` (pointer-down) |
-| DC/Transient, sidebar tabs | State indication | `Segmented`: a clipped copy of the control slides between segments (`clip-path`, 250 ms ease-in-out), so the pill and the label colour move together |
-| Photo panel, review list, answers, errors | Preventing a jarring change | `@starting-style`: fade in and rise 6 px, 220 ms ease-out, with no JS state |
-| Explanation steps, check results | Spatial continuity for a list the user asked for | 40 ms stagger, capped at 200 ms |
-| Canvas tooltips | Feedback, seen many times a minute | 125 ms opacity and `scale(0.97)`: barely there |
-| Current arrow | Explanation: which way current flows | Dashes march along the shaft (linear, constant motion) |
-| Photo recognition | Status, then delight on a rare event | A beam sweeps the photo while waiting, then detections appear one by one where they were found |
+| Current flow | Explanation: where current goes, and how much | Dots march along each wire segment in the direction of conventional current, at a speed ∝ √(I / I_peak). Segment currents come from `wireCurrents` (KCL on a spanning tree of each wire island). Linear, constant motion. In transient mode the peak is over the whole run, so dots slow as a capacitor charges |
+| Button press | Feedback | `scale(0.97)`, 160 ms, strong ease-out, on `:active` |
+| DC/Transient, sidebar tabs | State indication | `Segmented`: a clipped copy slides between segments (`clip-path`, 250 ms ease-in-out) |
+| Panels, answers, errors | Preventing a jarring change | `@starting-style`: fade and rise 6 px, 220 ms |
+| Explanation steps | Continuity for a list the user asked for | 40 ms stagger, capped at 200 ms |
+| Tool rail labels | Feedback | CSS tooltip after a 350 ms hover delay, so sweeping across the rail doesn't flash labels |
+| Selection | State indication | A cyan glow (`drop-shadow`) on the selected element |
+| Photo recognition | Status, then delight on a rare event | A scan beam while waiting; detections appear one by one |
 
-**Deliberately not animated:** tool switching and part placement. They are
-driven by keyboard shortcuts, many times a minute, and any motion there
-would only lag. Values in the results tables don't animate either, because
-the user is reading them.
+**Deliberately not animated:** tool switching, part placement and dragging
+(the part tracks the pointer 1:1, snapping to the grid). They happen many
+times a minute, often from the keyboard. Values in the tables don't animate
+either, because they are being read.
 
-Every animation uses `transform`, `opacity` or `clip-path` (no layout
-properties). Hover effects use Tailwind's `hover:` variant, which only
-applies on devices that can really hover. Under
-`prefers-reduced-motion: reduce`, movement is dropped and the fades that
-explain a change are kept; the tab indicator jumps instead of sliding.
+Every animation uses `transform`, `opacity`, `clip-path` or
+`stroke-dashoffset`. Under `prefers-reduced-motion: reduce` the flowing dots
+are hidden (the hover arrows still show direction), movement is dropped and
+fades are kept.
+
+## Editing
+
+- **Undo/redo** keeps whole schematics (structurally shared, 200 steps).
+  Edits of one gesture undo as one step: every tick of a value slider, every
+  grid step of one drag.
+- **Moving.** Drag a part, wire or ground, or nudge the selection with the
+  arrow keys. Wires ending on a moved part's terminals stretch to follow it.
+- **Sharing.** *Share* puts the whole circuit in the URL fragment
+  (`#c=<base64url JSON>`) and copies the link. It works on the static site
+  with no server, and fragments never reach server logs. *Export* and
+  *Import* use the same JSON as files. Both are validated field by field and
+  rebuilt from the checked fields only, because a link can come from anyone.
 
 ## Known limitations
 
-- Parts cannot be dragged; delete and re-place instead.
-- No undo yet. The reducer design makes it straightforward (keep a stack of past
-  `schematic` values).
 - Hover readouts need a pointer. The results tables list every value for
   keyboard and touch users, and the charts' time cursor moves with the arrow
   keys.
 - Sources are constant, so a transient run is a step response from the
   initial conditions. Pulse and sine sources are the natural next addition.
+- No zoom or pan yet: the view fits the circuit and grows as you draw.

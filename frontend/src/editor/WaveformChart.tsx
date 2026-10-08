@@ -94,10 +94,10 @@ export function WaveformChart({ title, unit, time, series, cursor, onCursor }: W
   return (
     <figure className="space-y-1">
       <figcaption className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
-        <span className="font-semibold text-slate-800">{title}</span>
+        <span className="font-semibold text-slate-100">{title}</span>
         {/* Legend: a short stroke of the series color keys each label. */}
         {series.map((s) => (
-          <span key={s.key} className="flex items-center gap-1.5 text-slate-600">
+          <span key={s.key} className="flex items-center gap-1.5 text-slate-300">
             <svg width="14" height="4" aria-hidden="true">
               <line x1="0" y1="2" x2="14" y2="2" stroke={SERIES_COLORS[s.slot]} strokeWidth="2" strokeLinecap="round" />
             </svg>
@@ -108,7 +108,7 @@ export function WaveformChart({ title, unit, time, series, cursor, onCursor }: W
       <svg
         ref={svgRef}
         viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
-        className="h-auto w-full touch-none select-none rounded-md bg-white outline-none focus-visible:ring-2 focus-visible:ring-sky-500"
+        className="h-auto w-full touch-none select-none rounded-md bg-transparent outline-none focus-visible:ring-2 focus-visible:ring-sky-500"
         role="img"
         aria-label={`${title} versus time. Use the arrow keys to move the time cursor.`}
         tabIndex={0}
@@ -124,14 +124,14 @@ export function WaveformChart({ title, unit, time, series, cursor, onCursor }: W
         <g className="text-[11px]">
           {yTicks.map((v) => (
             <g key={v}>
-              <line x1={MARGIN.left} x2={WIDTH - MARGIN.right} y1={y(v)} y2={y(v)} stroke={v === 0 ? '#cbd5e1' : '#eef2f6'} />
-              <text x={MARGIN.left - 6} y={y(v)} textAnchor="end" dominantBaseline="middle" className="fill-slate-500">
+              <line x1={MARGIN.left} x2={WIDTH - MARGIN.right} y1={y(v)} y2={y(v)} stroke={v === 0 ? '#475569' : 'rgb(255 255 255 / 0.06)'} />
+              <text x={MARGIN.left - 6} y={y(v)} textAnchor="end" dominantBaseline="middle" className="fill-slate-400">
                 {formatTick(v, unit)}
               </text>
             </g>
           ))}
           {xTicks.map((t) => (
-            <text key={t} x={x(t)} y={HEIGHT - MARGIN.bottom + 16} textAnchor="middle" className="fill-slate-500">
+            <text key={t} x={x(t)} y={HEIGHT - MARGIN.bottom + 16} textAnchor="middle" className="fill-slate-400">
               {formatTick(t, 's')}
             </text>
           ))}
@@ -151,7 +151,7 @@ export function WaveformChart({ title, unit, time, series, cursor, onCursor }: W
 
         {/* Direct labels at the end of each line, in text ink. */}
         {labels.map(({ s, y: ly }) => (
-          <text key={s.key} x={WIDTH - MARGIN.right + 6} y={ly} dominantBaseline="middle" className="fill-slate-700 text-[11px]">
+          <text key={s.key} x={WIDTH - MARGIN.right + 6} y={ly} dominantBaseline="middle" className="fill-slate-300 text-[11px]">
             {s.label}
           </text>
         ))}
@@ -190,12 +190,12 @@ function Crosshair({
   const boxX = x + 10 + boxWidth > WIDTH - MARGIN.right ? x - 10 - boxWidth : x + 10
   return (
     <g pointerEvents="none" data-testid="chart-crosshair">
-      <line x1={x} x2={x} y1={MARGIN.top} y2={HEIGHT - MARGIN.bottom} stroke="#94a3b8" strokeWidth={1} />
+      <line x1={x} x2={x} y1={MARGIN.top} y2={HEIGHT - MARGIN.bottom} stroke="#64748b" strokeWidth={1} />
       {dots.map((d) => (
         // A 2 px surface ring keeps overlapping markers distinct.
-        <circle key={d.key} cx={x} cy={d.cy} r={4} fill={SERIES_COLORS[d.slot]} stroke="#ffffff" strokeWidth={2} />
+        <circle key={d.key} cx={x} cy={d.cy} r={4} fill={SERIES_COLORS[d.slot]} stroke="#0f1626" strokeWidth={2} />
       ))}
-      <rect x={boxX} y={MARGIN.top} width={boxWidth} height={boxHeight} rx={6} fill="#0f172a" fillOpacity={0.92} />
+      <rect x={boxX} y={MARGIN.top} width={boxWidth} height={boxHeight} rx={6} fill="#020617" fillOpacity={0.94} stroke="rgb(255 255 255 / 0.12)" />
       <text x={boxX + 8} y={MARGIN.top + 15} className="fill-slate-300 text-[11px]">
         t = {formatValue(time, 's')}
       </text>

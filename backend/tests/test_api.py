@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import uuid
+from pathlib import Path
 
 from alembic import command
 from fastapi.testclient import TestClient
@@ -198,3 +199,20 @@ def test_explain_with_claude_configured(settings: Settings, db: sessionmaker[Ses
 def test_models_and_migrations_agree(db: sessionmaker[Session]) -> None:
     # Fails if a model changes without a matching Alembic migration.
     command.check(alembic_config())
+
+
+def test_hosting_database_urls_get_the_psycopg_driver() -> None:
+    assert (
+        Settings(database_url="postgres://u:p@h:5432/d").database_url == "postgresql+psycopg://u:p@h:5432/d"
+    )
+    assert Settings(database_url="postgresql://u:p@h/d").database_url == "postgresql+psycopg://u:p@h/d"
+    assert Settings(database_url="postgresql+psycopg://x").database_url == "postgresql+psycopg://x"
+
+
+def test_serves_the_built_frontend_beside_the_api(
+    settings: Settings, db: sessionmaker[Session], tmp_path: Path
+) -> None:
+    (tmp_path / "index.html").write_text("<div id=root></div>")
+    client = make_client(settings.model_copy(update={"static_dir": tmp_path}), db, Explainer())
+    assert client.get("/").text == "<div id=root></div>"
+    assert client.get("/api/health").json()["status"] == "ok"

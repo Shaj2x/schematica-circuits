@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { voltageDivider } from './examples'
-import { type EditorAction, type EditorState, editorReducer, initialState, nextId } from './editor'
+import { type EditorAction, type EditorState, type Tool, canRedo, editorReducer, initialState, nextId } from './editor'
+import { type Schematic, emptySchematic } from './model'
 
 const p = (x: number, y: number) => ({ x, y })
 const run = (actions: EditorAction[], state: EditorState = initialState()) => actions.reduce(editorReducer, state)
@@ -118,5 +119,76 @@ describe('nextId', () => {
   it('uses one more than the largest existing number', () => {
     expect(nextId(voltageDivider.schematic, 'R')).toBe('R3')
     expect(nextId(voltageDivider.schematic, 'I')).toBe('I1')
+  })
+})
+
+describe('undo and redo', () => {
+  const place = (state: EditorState, tool: Tool, x: number, y: number) =>
+    editorReducer(editorReducer(state, { type: 'setTool', tool }), { type: 'clickPoint', point: { x, y } })
+
+  it('undoes and redoes edits, and a new edit clears redo', () => {
+    let s = place(initialState(), 'resistor', 1, 1)
+    s = place(s, 'resistor', 1, 3)
+    expect(s.schematic.parts.map((p) => p.id)).toEqual(['R1', 'R2'])
+    s = editorReducer(s, { type: 'undo' })
+    expect(s.schematic.parts.map((p) => p.id)).toEqual(['R1'])
+    expect(canRedo(s)).toBe(true)
+    s = editorReducer(s, { type: 'redo' })
+    expect(s.schematic.parts.map((p) => p.id)).toEqual(['R1', 'R2'])
+    s = editorReducer(s, { type: 'undo' })
+    s = place(s, 'capacitor', 4, 4)
+    expect(canRedo(s)).toBe(false)
+  })
+
+  it('groups a slider drag into one step', () => {
+    let s = place(initialState(), 'resistor', 1, 1)
+    for (const value of [1100, 1200, 1300, 1500]) s = editorReducer(s, { type: 'setValue', id: 'R1', value })
+    s = editorReducer(s, { type: 'undo' })
+    expect(s.schematic.parts[0]!.value).toBe(1000)
+  })
+
+  it('groups the steps of one drag, but not separate drags', () => {
+    let s = place(initialState(), 'resistor', 1, 1)
+    s = editorReducer(s, { type: 'move', id: 'R1', dx: 1, dy: 0, gesture: 1 })
+    s = editorReducer(s, { type: 'move', id: 'R1', dx: 1, dy: 0, gesture: 1 })
+    s = editorReducer(s, { type: 'move', id: 'R1', dx: 0, dy: 1, gesture: 2 })
+    expect(s.schematic.parts[0]!.a).toEqual({ x: 3, y: 2 })
+    s = editorReducer(s, { type: 'undo' })
+    expect(s.schematic.parts[0]!.a).toEqual({ x: 3, y: 1 })
+    s = editorReducer(s, { type: 'undo' })
+    expect(s.schematic.parts[0]!.a).toEqual({ x: 1, y: 1 })
+  })
+
+  it('makes loading a circuit undoable', () => {
+    let s = place(initialState(), 'resistor', 1, 1)
+    s = editorReducer(s, { type: 'load', schematic: emptySchematic })
+    s = editorReducer(s, { type: 'undo' })
+    expect(s.schematic.parts).toHaveLength(1)
+  })
+})
+
+describe('moving', () => {
+  it('drags attached wire ends along with a part', () => {
+    const schematic: Schematic = {
+      parts: [{ id: 'R1', kind: 'resistor', a: { x: 2, y: 2 }, b: { x: 4, y: 2 }, value: 1 }],
+      wires: [
+        { id: 'W1', a: { x: 0, y: 2 }, b: { x: 2, y: 2 } },
+        { id: 'W2', a: { x: 4, y: 2 }, b: { x: 6, y: 2 } },
+        { id: 'W3', a: { x: 0, y: 5 }, b: { x: 6, y: 5 } },
+      ],
+      grounds: [],
+    }
+    const s = editorReducer(initialState(schematic), { type: 'move', id: 'R1', dx: 0, dy: 1 })
+    expect(s.schematic.wires.map((w) => [w.a, w.b])).toEqual([
+      [{ x: 0, y: 2 }, { x: 2, y: 3 }],
+      [{ x: 4, y: 3 }, { x: 6, y: 2 }],
+      [{ x: 0, y: 5 }, { x: 6, y: 5 }],
+    ])
+  })
+
+  it('refuses to move off the canvas', () => {
+    const schematic: Schematic = { parts: [], wires: [], grounds: [{ id: 'G1', at: { x: 0, y: 3 } }] }
+    const s0 = initialState(schematic)
+    expect(editorReducer(s0, { type: 'move', id: 'G1', dx: -1, dy: 0 })).toEqual({ ...s0, lastEdit: undefined })
   })
 })
