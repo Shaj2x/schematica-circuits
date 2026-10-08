@@ -8,10 +8,17 @@
   --font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   --font-mono: ui-monospace, 'SF Mono', 'JetBrains Mono', Menlo, Consolas, monospace;
 
-  /* Depth: hairline + soft ambient shadow, heavier for larger surfaces. */
-  --shadow-card: 0 0 0 1px rgb(15 23 42 / 0.06), 0 1px 2px rgb(15 23 42 / 0.04), 0 4px 16px -4px rgb(15 23 42 / 0.06);
-  --shadow-raised: 0 0 0 1px rgb(15 23 42 / 0.06), 0 1px 2px rgb(15 23 42 / 0.06), 0 2px 6px -1px rgb(15 23 42 / 0.08);
-  --shadow-float: 0 0 0 1px rgb(15 23 42 / 0.08), 0 8px 24px -6px rgb(15 23 42 / 0.25);
+  /* Surfaces, darkest to lightest. The canvas is its own, slightly bluer ink. */
+  --color-ink-950: #05080f;
+  --color-ink-900: #0a0f1a;
+  --color-ink-850: #0f1626;
+  --color-ink-800: #141c2e;
+  --color-ink-700: #1c2639;
+
+  /* Depth: a hairline of light on top, a soft shadow below. */
+  --shadow-card: inset 0 1px 0 rgb(255 255 255 / 0.04), 0 0 0 1px rgb(255 255 255 / 0.06), 0 12px 32px -12px rgb(0 0 0 / 0.6);
+  --shadow-raised: inset 0 1px 0 rgb(255 255 255 / 0.06), 0 0 0 1px rgb(255 255 255 / 0.08), 0 1px 2px rgb(0 0 0 / 0.4);
+  --shadow-float: 0 0 0 1px rgb(255 255 255 / 0.1), 0 16px 40px -8px rgb(0 0 0 / 0.7);
 
   /* Motion. Strong curves: the built-in CSS ones are too weak for UI. */
   --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
@@ -19,136 +26,224 @@
 }
 
 :root {
-  color-scheme: light;
+  color-scheme: dark;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   font-feature-settings: 'cv11', 'ss01';
 }
 
 body {
+  color: var(--color-slate-200);
   background:
-    radial-gradient(1200px 400px at 50% -200px, rgb(14 165 233 / 0.07), transparent 70%),
-    var(--color-slate-50);
+    radial-gradient(900px 500px at 12% -10%, rgb(34 211 238 / 0.08), transparent 60%),
+    radial-gradient(800px 500px at 100% 0%, rgb(99 102 241 / 0.08), transparent 60%),
+    var(--color-ink-950);
+}
+
+::selection {
+  background: rgb(34 211 238 / 0.3);
 }
 
 /* Components live in their layer, so utilities on an element still win. */
 @layer components {
-/* Numbers that update live must not jiggle as digits change width. */
-.readout {
-  font-family: var(--font-mono);
-  font-variant-numeric: tabular-nums;
-  letter-spacing: -0.01em;
+  /* Numbers that update live must not jiggle as digits change width. */
+  .readout {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.01em;
+  }
+
+  .panel {
+    border-radius: 0.875rem;
+    background: linear-gradient(180deg, rgb(20 28 46 / 0.92), rgb(15 22 38 / 0.92));
+    box-shadow: var(--shadow-card);
+  }
+
+  .eyebrow {
+    font-size: 0.6875rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--color-slate-500);
+  }
+
+  /* Buttons. Press feedback on pointer-down, so the interface answers
+     immediately; hover colour is gated to real pointers. */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.375rem;
+    border-radius: 0.5rem;
+    padding: 0.375rem 0.75rem;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    line-height: 1.25rem;
+    white-space: nowrap;
+    user-select: none;
+    transition:
+      transform 160ms var(--ease-out),
+      background-color 150ms ease,
+      color 150ms ease,
+      box-shadow 150ms ease;
+  }
+  .btn:active:not(:disabled) {
+    transform: scale(0.97);
+  }
+  .btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+  .btn:focus-visible {
+    outline: 2px solid var(--color-cyan-400);
+    outline-offset: 2px;
+  }
+  .btn-primary {
+    background: linear-gradient(180deg, var(--color-cyan-300), var(--color-cyan-400));
+    color: var(--color-ink-950);
+    font-weight: 600;
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.4),
+      0 0 0 1px rgb(34 211 238 / 0.5),
+      0 4px 16px -4px rgb(34 211 238 / 0.5);
+  }
+  .btn-live {
+    background: linear-gradient(180deg, var(--color-emerald-300), var(--color-emerald-400));
+    color: var(--color-ink-950);
+    font-weight: 600;
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.4),
+      0 0 0 1px rgb(52 211 153 / 0.5),
+      0 4px 16px -4px rgb(52 211 153 / 0.55);
+  }
+  .btn-secondary {
+    background: rgb(255 255 255 / 0.06);
+    color: var(--color-slate-200);
+    box-shadow: var(--shadow-raised);
+  }
+  .btn-dark {
+    background: rgb(255 255 255 / 0.9);
+    color: var(--color-ink-950);
+    font-weight: 600;
+  }
+  .btn-ghost {
+    color: var(--color-slate-400);
+  }
+  .btn-icon {
+    width: 2rem;
+    height: 2rem;
+    padding: 0;
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .btn-primary:hover:not(:disabled) {
+      background: linear-gradient(180deg, var(--color-cyan-200), var(--color-cyan-300));
+    }
+    .btn-live:hover:not(:disabled) {
+      background: linear-gradient(180deg, var(--color-emerald-200), var(--color-emerald-300));
+    }
+    .btn-secondary:hover:not(:disabled) {
+      background: rgb(255 255 255 / 0.1);
+      color: white;
+    }
+    .btn-dark:hover:not(:disabled) {
+      background: white;
+    }
+    .btn-ghost:hover:not(:disabled) {
+      color: white;
+      background: rgb(255 255 255 / 0.06);
+    }
+  }
+
+  .field {
+    border-radius: 0.5rem;
+    background: rgb(255 255 255 / 0.04);
+    box-shadow: 0 0 0 1px rgb(255 255 255 / 0.1);
+    padding: 0.375rem 0.625rem;
+    font-size: 0.8125rem;
+    color: var(--color-slate-100);
+    transition: box-shadow 150ms ease;
+  }
+  .field::placeholder {
+    color: var(--color-slate-500);
+  }
+  .field:focus {
+    outline: none;
+    box-shadow:
+      0 0 0 1px var(--color-cyan-400),
+      0 0 0 4px rgb(34 211 238 / 0.15);
+  }
+  select.field option {
+    background: var(--color-ink-800);
+  }
+
+  kbd {
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    line-height: 1;
+    padding: 0.1875rem 0.3125rem;
+    border-radius: 0.25rem;
+    background: rgb(255 255 255 / 0.06);
+    color: var(--color-slate-300);
+    box-shadow:
+      0 0 0 1px rgb(255 255 255 / 0.1),
+      0 1px 0 rgb(0 0 0 / 0.4);
+  }
+
+  /* Rail tooltips: CSS-only, shown after a short hover delay so sweeping
+     the pointer across the rail doesn't flash every label. */
+  .rail-tip {
+    position: relative;
+  }
+  .rail-tip::after {
+    /* Only where the rail is vertical and the pointer can hover; elsewhere
+       an invisible label would still widen the page. */
+    display: none;
+    content: attr(data-tip);
+    position: absolute;
+    left: calc(100% + 10px);
+    top: 50%;
+    z-index: 30;
+    white-space: nowrap;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.375rem;
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--color-slate-100);
+    background: var(--color-ink-950);
+    box-shadow: var(--shadow-float);
+    opacity: 0;
+    transform: translate(-4px, -50%);
+    pointer-events: none;
+    transition:
+      opacity 125ms var(--ease-out),
+      transform 125ms var(--ease-out);
+  }
+  @media (hover: hover) and (pointer: fine) and (min-width: 64rem) {
+    .rail-tip::after {
+      display: block;
+    }
+    .rail-tip:hover::after {
+      opacity: 1;
+      transform: translate(0, -50%);
+      transition-delay: 350ms;
+    }
+  }
 }
 
-/* ---------------------------------------------------------------------------
- * Buttons. Press feedback on pointer-down, so the interface answers
- * immediately; hover colour is gated to real pointers.
- */
-.btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.375rem;
-  border-radius: 0.5rem;
-  padding: 0.375rem 0.75rem;
-  font-size: 0.875rem;
-  font-weight: 500;
-  line-height: 1.25rem;
-  white-space: nowrap;
-  user-select: none;
-  transition:
-    transform 160ms var(--ease-out),
-    background-color 150ms ease,
-    color 150ms ease,
-    box-shadow 150ms ease;
-}
-.btn:active:not(:disabled) {
-  transform: scale(0.97);
-}
-.btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-.btn:focus-visible {
-  outline: 2px solid var(--color-sky-500);
-  outline-offset: 2px;
-}
-.btn-primary {
-  background: var(--color-sky-600);
-  color: white;
-  box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 0.15),
-    0 1px 2px rgb(2 132 199 / 0.3);
-}
-.btn-dark {
-  background: var(--color-slate-900);
-  color: white;
-  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.1);
-}
-.btn-live {
-  background: var(--color-emerald-600);
-  color: white;
-  box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 0.15),
-    0 1px 2px rgb(5 150 105 / 0.3);
-}
-.btn-secondary {
-  background: white;
-  color: var(--color-slate-700);
-  box-shadow: var(--shadow-raised);
-}
-.btn-ghost {
-  color: var(--color-slate-600);
-}
-@media (hover: hover) and (pointer: fine) {
-  .btn-primary:hover:not(:disabled) {
-    background: var(--color-sky-700);
-  }
-  .btn-dark:hover:not(:disabled) {
-    background: var(--color-slate-700);
-  }
-  .btn-live:hover:not(:disabled) {
-    background: var(--color-emerald-700);
-  }
-  .btn-secondary:hover:not(:disabled) {
-    color: var(--color-slate-900);
-    background: var(--color-slate-50);
-  }
-  .btn-ghost:hover:not(:disabled) {
-    color: var(--color-slate-900);
-    background: rgb(15 23 42 / 0.05);
-  }
+/* Selected elements on the canvas glow, so selection reads at a glance. */
+.glow {
+  filter: drop-shadow(0 0 5px rgb(103 232 249 / 0.65));
 }
 
-.field {
-  border-radius: 0.5rem;
-  background: white;
-  box-shadow: var(--shadow-raised);
-  padding: 0.375rem 0.625rem;
-  font-size: 0.875rem;
-  color: var(--color-slate-700);
-  transition: box-shadow 150ms ease;
+/* Current flow: dots march along each wire in the direction conventional
+   current flows, faster for more current. Constant motion, so linear. */
+.flow-dots {
+  animation: flow-dots 1s linear infinite;
 }
-.field:focus {
-  outline: none;
-  box-shadow:
-    0 0 0 1px var(--color-sky-500),
-    0 0 0 4px rgb(14 165 233 / 0.15);
-}
-
-kbd {
-  font-family: var(--font-mono);
-  font-size: 0.6875rem;
-  line-height: 1;
-  padding: 0.1875rem 0.3125rem;
-  border-radius: 0.25rem;
-  background: white;
-  color: var(--color-slate-600);
-  box-shadow:
-    0 0 0 1px rgb(15 23 42 / 0.1),
-    0 1px 0 rgb(15 23 42 / 0.1);
-}
-
+@keyframes flow-dots {
+  to {
+    stroke-dashoffset: -18;
+  }
 }
 
 /* ---------------------------------------------------------------------------
@@ -252,6 +347,14 @@ kbd {
 
 /* Reduced motion: keep the fades that explain what changed, drop movement. */
 @media (prefers-reduced-motion: reduce) {
+  /* Moving dots would be the largest motion on the page: hide them; the
+     hover arrows still show direction. */
+  .flow-dots {
+    display: none;
+  }
+  .rail-tip::after {
+    transform: translate(0, -50%) !important;
+  }
   .btn:active:not(:disabled) {
     transform: none;
   }

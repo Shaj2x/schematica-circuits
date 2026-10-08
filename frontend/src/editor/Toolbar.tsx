@@ -1,112 +1,71 @@
-import type { Dispatch } from 'react'
+import { type Dispatch, Fragment } from 'react'
 import type { EditorAction, Tool } from '../schematic/editor'
-import { type Example, examples } from '../schematic/examples'
-import { Segmented } from './Segmented'
 import { GroundSymbol, PartBody } from './symbols'
 import { TOOLS } from './tools'
 
-interface ToolbarProps {
+interface ToolRailProps {
   tool: Tool
   dispatch: Dispatch<EditorAction>
-  live: boolean
-  onToggleLive: () => void
-  mode: 'dc' | 'transient'
-  onMode: (mode: 'dc' | 'transient') => void
-  onLoadExample: (example: Example) => void
-  onClear: () => void
+  hasSelection: boolean
 }
 
-export function Toolbar({ tool, dispatch, live, onToggleLive, mode, onMode, onLoadExample, onClear }: ToolbarProps) {
+/**
+ * The vertical tool palette. Tool changes are instant: they are mostly made
+ * from the keyboard, many times a minute, and a sliding highlight would
+ * only lag. Each tool's name and shortcut show in a delayed tooltip.
+ */
+export function ToolRail({ tool, dispatch, hasSelection }: ToolRailProps) {
   return (
-    <div className="flex flex-wrap items-center gap-2">
-      {/* Tool changes are instant: they are mostly made from the keyboard,
-          many times a minute, and a sliding highlight would only lag. */}
-      <div role="toolbar" aria-label="Tools" className="flex shrink-0 gap-0.5 rounded-lg bg-white p-0.5 shadow-[var(--shadow-raised)]">
-        {TOOLS.map(({ tool: t, label, key }) => (
+    <div className="panel flex shrink-0 gap-1 p-1.5 lg:flex-col" style={{ ["--canvas-bg" as string]: "transparent" }} role="toolbar" aria-label="Tools" aria-orientation="vertical">
+      {TOOLS.map(({ tool: t, label, key }, i) => (
+        <Fragment key={t}>
+          {(i === 2 || i === 7) && <span aria-hidden className="m-1 bg-white/[0.08] max-lg:w-px lg:h-px" />}
           <button
-            key={t}
             type="button"
             aria-pressed={tool === t}
             aria-label={label}
-            title={`${label} (${key})`}
+            data-tip={`${label}  ${key}`}
             onClick={() => dispatch({ type: 'setTool', tool: t })}
-            className={`btn h-8 w-9 px-0 ${
-              tool === t ? 'bg-sky-50 text-sky-700 ring-1 ring-sky-200 ring-inset' : 'btn-ghost'
+            className={`rail-tip btn btn-icon h-9 w-9 ${
+              tool === t
+                ? 'bg-cyan-400/15 text-cyan-200 shadow-[inset_0_0_0_1px_rgb(34_211_238/0.35)]'
+                : 'btn-ghost'
             }`}
           >
             <ToolIcon tool={t} />
           </button>
-        ))}
-      </div>
-
-      <div className="flex items-center gap-0.5">
-        <button
-          type="button"
-          title="Rotate the selected part, or the next one placed (R)"
-          onClick={() => dispatch({ type: 'rotate' })}
-          className="btn btn-ghost px-2.5"
-        >
-          <svg viewBox="0 0 16 16" width={15} height={15} fill="none" stroke="currentColor" strokeWidth={1.6} aria-hidden>
-            <path d="M13 8a5 5 0 1 1-1.5-3.6M13 2.5v2.4h-2.4" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-          Rotate
-        </button>
-        <select
-          aria-label="Load an example circuit"
-          value=""
-          onChange={(e) => {
-            const example = examples.find((x) => x.name === e.target.value)
-            if (example) onLoadExample(example)
-          }}
-          className="field max-w-40 py-1.5"
-        >
-          <option value="" disabled>
-            Examples…
-          </option>
-          {examples.map((x) => (
-            <option key={x.name} value={x.name}>
-              {x.name}
-            </option>
-          ))}
-        </select>
-        <button type="button" onClick={onClear} className="btn btn-ghost px-2.5">
-          Clear
-        </button>
-      </div>
-
-      <div className="ml-auto flex shrink-0 items-center gap-2">
-        <Segmented
-          label="Analysis"
-          options={[
-            ['dc', 'DC'],
-            ['transient', 'Transient'],
-          ]}
-          value={mode}
-          onChange={onMode}
-        />
-        <button
-          type="button"
-          onClick={onToggleLive}
-          aria-pressed={live}
-          title={live ? 'Stop solving on every edit' : 'Solve now, then keep solving as you edit'}
-          className={`btn min-w-[5.5rem] font-semibold ${live ? 'btn-live' : 'btn-primary'}`}
-        >
-          {live ? (
-            <>
-              <span aria-hidden className="size-1.5 rounded-full bg-white shadow-[0_0_0_3px_rgb(255_255_255/0.3)]" />
-              Live
-            </>
-          ) : (
-            'Solve'
-          )}
-        </button>
-      </div>
+        </Fragment>
+      ))}
+      <span aria-hidden className="m-1 bg-white/[0.08] max-lg:w-px lg:h-px" />
+      <button
+        type="button"
+        aria-label="Rotate"
+        data-tip="Rotate  R"
+        onClick={() => dispatch({ type: 'rotate' })}
+        className="rail-tip btn btn-ghost btn-icon h-9 w-9"
+      >
+        <svg viewBox="0 0 16 16" width={16} height={16} fill="none" stroke="currentColor" strokeWidth={1.6} aria-hidden>
+          <path d="M13 8a5 5 0 1 1-1.5-3.6M13 2.5v2.4h-2.4" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      </button>
+      <button
+        type="button"
+        aria-label="Delete selected"
+        data-tip="Delete  ⌫"
+        disabled={!hasSelection}
+        onClick={() => dispatch({ type: 'deleteSelected' })}
+        className="rail-tip btn btn-ghost btn-icon h-9 w-9"
+      >
+        <svg viewBox="0 0 16 16" width={16} height={16} fill="none" stroke="currentColor" strokeWidth={1.5} aria-hidden>
+          <path d="M3 4.5h10M6.5 4.5V3h3v1.5M4.5 4.5l.6 8.5h5.8l.6-8.5" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      </button>
     </div>
   )
 }
 
 function ToolIcon({ tool }: { tool: Tool }) {
-  const common = { width: 20, height: 15, fill: 'none', stroke: 'currentColor', strokeWidth: 2.2, 'aria-hidden': true }
+  const common = { width: 24, height: 18, fill: 'none', stroke: 'currentColor', strokeWidth: 2.2, 'aria-hidden': true }
   switch (tool) {
     case 'select':
       return (

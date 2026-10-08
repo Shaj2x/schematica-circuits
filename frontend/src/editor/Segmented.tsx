@@ -47,10 +47,10 @@ export function Segmented<T extends string>({ options, value, onChange, label, k
     }
   }, [value, options.length])
 
-  const segment = 'flex-1 whitespace-nowrap rounded-md px-3 py-1 text-center text-sm font-medium'
+  const segment = 'flex-1 whitespace-nowrap rounded-md px-3 py-1 text-center text-[13px] font-medium'
 
   return (
-    <div className={`relative rounded-lg bg-slate-900/[0.05] p-0.5 ${className}`}>
+    <div className={`relative rounded-lg bg-white/[0.04] p-0.5 ring-1 ring-white/[0.06] ${className}`}>
       <div
         ref={listRef}
         role={kind === 'tabs' ? 'tablist' : 'group'}
@@ -66,7 +66,7 @@ export function Segmented<T extends string>({ options, value, onChange, label, k
             aria-selected={kind === 'tabs' ? value === option : undefined}
             aria-pressed={kind === 'toggle' ? value === option : undefined}
             onClick={() => onChange(option)}
-            className={`${segment} text-slate-600 transition-colors duration-150 hover:text-slate-900 focus-visible:outline-2 focus-visible:outline-sky-500`}
+            className={`${segment} text-slate-400 transition-colors duration-150 hover:text-slate-100 focus-visible:outline-2 focus-visible:outline-cyan-400`}
           >
             {text}
           </button>
@@ -74,7 +74,7 @@ export function Segmented<T extends string>({ options, value, onChange, label, k
         {/* The selected look, clipped to the selected segment. */}
         <div
           aria-hidden
-          className={`${settled ? 'segmented-active' : ''} pointer-events-none absolute inset-0 flex rounded-md bg-white text-sky-700 shadow-[var(--shadow-raised)]`}
+          className={`${settled ? 'segmented-active' : ''} pointer-events-none absolute inset-0 flex rounded-md bg-ink-700 text-cyan-200 shadow-[var(--shadow-raised)]`}
           style={{ clipPath: clip ?? 'inset(0 100% 0 0)' }}
         >
           {options.map(([option, text]) => (

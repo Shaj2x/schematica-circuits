@@ -42,3 +42,52 @@ export function canvasSize(schematic: Schematic): { cols: number; rows: number }
     rows: Math.max(ROWS, ...points.map((p) => p.y + 1)),
   }
 }
+
+/** The visible part of the grid, in grid units. */
+export interface View {
+  x: number
+  y: number
+  cols: number
+  rows: number
+}
+
+function bounds(schematic: Schematic) {
+  const points = [
+    ...schematic.parts.flatMap((p) => [p.a, p.b]),
+    ...schematic.wires.flatMap((w) => [w.a, w.b]),
+    ...schematic.grounds.flatMap((g) => [g.at, { x: g.at.x, y: g.at.y + 1 }]), // the symbol hangs below
+  ]
+  if (points.length === 0) return undefined
+  const xs = points.map((p) => p.x)
+  const ys = points.map((p) => p.y)
+  return { x0: Math.min(...xs), y0: Math.min(...ys), x1: Math.max(...xs), y1: Math.max(...ys) }
+}
+
+/**
+ * A view centred on the drawing, with room around it, at least the default
+ * 20 x 12. Used when a circuit is opened; while editing, `growView` only
+ * ever enlarges it, so the canvas never shifts under the pointer.
+ */
+export function fitView(schematic: Schematic): View {
+  const b = bounds(schematic)
+  if (!b) return { x: 0, y: 0, cols: COLS, rows: ROWS }
+  const margin = 3
+  const cols = Math.max(COLS, b.x1 - b.x0 + 2 * margin)
+  const rows = Math.max(ROWS, b.y1 - b.y0 + 2 * margin)
+  // Centre the drawing. Near the origin that shows a strip of negative
+  // coordinates, which is drawn without grid dots: nothing can go there.
+  const x = Math.floor((b.x0 + b.x1) / 2 - cols / 2)
+  const y = Math.floor((b.y0 + b.y1) / 2 - rows / 2)
+  return { x, y, cols, rows }
+}
+
+/** The view, enlarged if the drawing now reaches past it (plus a unit of room). */
+export function growView(view: View, schematic: Schematic): View {
+  const b = bounds(schematic)
+  if (!b) return view
+  const x = Math.min(view.x, b.x0 - 1)
+  const y = Math.min(view.y, b.y0 - 1)
+  const right = Math.max(view.x + view.cols, b.x1 + 2) // + room for labels right of vertical parts
+  const bottom = Math.max(view.y + view.rows, b.y1 + 1)
+  return { x, y, cols: right - x, rows: bottom - y }
+}

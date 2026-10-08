@@ -28,7 +28,7 @@ export function ExplainPanel({ api, netlist }: { api: Api; netlist: Netlist }) {
 
   return (
     <section aria-label="Explanation" className="space-y-3">
-      <p className="text-sm text-slate-600">
+      <p className="text-sm text-slate-300">
         See how nodal analysis gets the answer: which nodes are fixed, the KCL equation at each node, and the solution.
       </p>
       <button
@@ -106,7 +106,7 @@ export function CheckPanel({
 
   return (
     <section aria-label="Check my work" className="space-y-3 text-sm">
-      <p className="text-slate-600">
+      <p className="text-slate-300">
         Solve the circuit by hand, enter any values you found (for example 6.67 or 3.33m), and check them. Currents are
         positive from a part’s first terminal to its second.
       </p>
@@ -115,25 +115,25 @@ export function CheckPanel({
           const result = resultFor(key)
           return (
             <label key={key} className="flex items-center gap-2">
-              <span className="readout w-16 text-slate-700">{label}</span>
+              <span className="readout w-16 text-slate-200">{label}</span>
               <input
                 value={inputs[key] ?? ''}
                 onChange={(e) => setInputs({ ...inputs, [key]: e.target.value })}
                 aria-invalid={invalid.includes(key)}
                 aria-label={`Your value for ${label}`}
                 placeholder={unit}
-                className={`field readout w-full py-1 ${invalid.includes(key) ? '!bg-red-50 ring-1 ring-red-400' : ''}`}
+                className={`field readout w-full py-1 ${invalid.includes(key) ? '!bg-red-500/10 ring-1 ring-red-400' : ''}`}
               />
               <span
                 aria-label={result ? (result.correct ? 'correct' : 'incorrect') : undefined}
-                className={`w-4 text-center font-semibold ${result?.correct ? 'text-emerald-600' : 'text-red-600'} ${result ? 'tooltip-pop' : ''}`}
+                className={`w-4 text-center font-semibold ${result?.correct ? 'text-emerald-400' : 'text-red-400'} ${result ? 'tooltip-pop' : ''}`}
               >
                 {result ? (result.correct ? '✓' : '✗') : ''}
               </span>
             </label>
           )
         })}
-        {invalid.length > 0 && <p className="text-xs text-red-600">Some values could not be read. Try 6.67, 3.33m or 2.2k.</p>}
+        {invalid.length > 0 && <p className="text-xs text-red-400">Some values could not be read. Try 6.67, 3.33m or 2.2k.</p>}
         <button
           type="submit"
           disabled={status.state === 'loading'}
@@ -149,7 +149,7 @@ export function CheckPanel({
             {status.value.results
               .filter((r) => !r.correct)
               .map((r) => (
-                <li key={r.label} className="rounded-lg bg-red-50 p-2.5 text-red-900 ring-1 ring-red-200 ring-inset">
+                <li key={r.label} className="rounded-lg bg-red-500/10 p-2.5 text-red-200 ring-1 ring-red-400/30 ring-inset">
                   <span className="font-mono font-semibold">{r.label}</span>: you wrote{' '}
                   {formatValue(r.submitted, r.kind === 'voltage' ? 'V' : 'A')}. {r.hint}
                   {r.expected !== null && ` The correct value is ${formatValue(r.expected, r.kind === 'voltage' ? 'V' : 'A')}.`}
@@ -162,7 +162,7 @@ export function CheckPanel({
           {status.value.feedback.source === 'claude' ? (
             <ExplanationView explanation={status.value.feedback} />
           ) : (
-            <p className="font-medium text-slate-800">{status.value.feedback.summary}</p>
+            <p className="font-medium text-slate-100">{status.value.feedback.summary}</p>
           )}
         </div>
       )}
@@ -172,7 +172,7 @@ export function CheckPanel({
 
 function ErrorBox({ message }: { message: string }) {
   return (
-    <p role="alert" className="ui-enter rounded-lg bg-red-50 p-2.5 text-sm text-red-800 ring-1 ring-red-200 ring-inset">
+    <p role="alert" className="ui-enter rounded-lg bg-red-500/10 p-2.5 text-sm text-red-200 ring-1 ring-red-400/30 ring-inset">
       {message}
     </p>
   )
