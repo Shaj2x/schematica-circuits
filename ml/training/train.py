@@ -58,7 +58,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--data", type=Path, required=True, help="data.yaml from prepare_dataset.py")
     parser.add_argument("--model", default="yolov8s.pt", help="starting weights (yolov8n.pt is faster, less accurate)")
-    parser.add_argument("--epochs", type=int, default=100)
+    parser.add_argument("--epochs", type=int, help="default 100, or 3 with --smoke")
     parser.add_argument("--imgsz", type=int, default=1024)
     parser.add_argument("--batch", type=int, default=-1, help="-1 picks the largest that fits in GPU memory")
     parser.add_argument("--smoke", action="store_true", help="tiny CPU run from scratch, to test the pipeline")
@@ -71,10 +71,10 @@ def main() -> None:
         # From scratch (no download), tiny and short: checks that training,
         # export and ONNX evaluation all work, not that the model is good.
         model = YOLO("yolov8n.yaml")
-        train_args: dict[str, Any] = {"epochs": 3, "imgsz": 320, "batch": 8, "device": "cpu", "workers": 0}
+        train_args: dict[str, Any] = {"epochs": args.epochs or 3, "imgsz": 320, "batch": 8, "device": "cpu", "workers": 0}
     else:
         model = YOLO(args.model)
-        train_args = {"epochs": args.epochs, "imgsz": args.imgsz, "batch": args.batch, "patience": 25}
+        train_args = {"epochs": args.epochs or 100, "imgsz": args.imgsz, "batch": args.batch, "patience": 25}
 
     model.train(
         data=str(args.data),
