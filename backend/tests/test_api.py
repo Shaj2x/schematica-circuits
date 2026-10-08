@@ -24,7 +24,11 @@ def save(client: TestClient, name: str = "Divider", netlist: dict | None = None)
 
 
 def test_health_reports_the_explanation_source(client: TestClient) -> None:
-    assert client.get("/api/health").json() == {"status": "ok", "explanations": "template"}
+    assert client.get("/api/health").json() == {
+        "status": "ok",
+        "explanations": "template",
+        "recognition": False,
+    }
 
 
 def test_circuit_crud(client: TestClient) -> None:

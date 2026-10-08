@@ -27,6 +27,7 @@ from app.config import Settings
 from app.db import make_sessionmaker
 from app.explain import Explainer
 from app.main import create_app
+from app.recognition import Recognizer
 
 TEST_DATABASE_URL = os.environ.get(
     "TEST_DATABASE_URL",
@@ -66,13 +67,15 @@ def settings() -> Settings:
     return Settings(database_url=TEST_DATABASE_URL, anthropic_api_key=None)
 
 
-def make_client(settings: Settings, db: sessionmaker[Session], explainer: Explainer) -> TestClient:
-    return TestClient(create_app(settings, db, explainer))
+def make_client(
+    settings: Settings, db: sessionmaker[Session], explainer: Explainer, recognizer: Recognizer | None = None
+) -> TestClient:
+    return TestClient(create_app(settings, db, explainer, recognizer or Recognizer()))
 
 
 @pytest.fixture
 def client(settings: Settings, db: sessionmaker[Session]) -> TestClient:
-    """The API with template explanations (no API key), as it runs today."""
+    """The API with template explanations (no API key) and no trained model."""
     return make_client(settings, db, Explainer())
 
 

@@ -1,6 +1,6 @@
 /** Grid geometry shared by the canvas and the symbol drawings. */
 
-import { PART_LENGTH, type Point } from '../schematic/model'
+import { PART_LENGTH, type Point, type Schematic } from '../schematic/model'
 
 export const GRID = 40
 export const PART_PX = PART_LENGTH * GRID
@@ -22,4 +22,23 @@ export function axes(a: Point, b: Point) {
   let normal = { x: along.y, y: -along.x }
   if (normal.y > 0 || (normal.y === 0 && normal.x < 0)) normal = { x: -normal.x, y: -normal.y }
   return { along, normal }
+}
+
+export const COLS = 20
+export const ROWS = 12
+
+/**
+ * Grid size: the default 20 x 12, grown to fit whatever is drawn, so a
+ * circuit recognized from a photo is never cut off at the edge.
+ */
+export function canvasSize(schematic: Schematic): { cols: number; rows: number } {
+  const points = [
+    ...schematic.parts.flatMap((p) => [p.a, p.b]),
+    ...schematic.wires.flatMap((w) => [w.a, w.b]),
+    ...schematic.grounds.map((g) => ({ x: g.at.x, y: g.at.y + 1 })), // room for the symbol below
+  ]
+  return {
+    cols: Math.max(COLS, ...points.map((p) => p.x + 2)), // labels sit right of vertical parts
+    rows: Math.max(ROWS, ...points.map((p) => p.y + 1)),
+  }
 }

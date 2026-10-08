@@ -166,6 +166,20 @@ in the header.
 - **Saved circuits keep their drawing.** Saving stores the editor geometry
   alongside the netlist, so a circuit reopens exactly as drawn.
 
+## From a photo
+
+**From photo** opens a panel that uploads the image to `/api/recognize` and
+draws every detection over it: blue for parts, amber below 0.5 confidence,
+red for symbols the solver cannot simulate. The current drawing is not
+touched until the user presses **Load into editor**. After loading, a review
+list keeps the pipeline's warnings, and each part id in it is a button that
+selects that part in the inspector, so fixing a wrong value or a backwards
+source takes two clicks. The design of the pipeline is in
+[vision.md](vision.md).
+
+The canvas grows to fit what is drawn (`canvasSize`), because a recognized
+circuit can be wider than the default 20 × 12 grid.
+
 ## Known limitations
 
 - Parts cannot be dragged; delete and re-place instead.

@@ -118,3 +118,31 @@ class HistoryEntry(BaseModel):
 class Health(BaseModel):
     status: Literal["ok"]
     explanations: Literal["template", "claude"]
+    recognition: bool
+
+
+class DetectionOut(BaseModel):
+    label: str
+    confidence: float
+    box: list[float] = Field(min_length=4, max_length=4, description="x0, y0, x1, y1 in image pixels")
+    part_id: str | None = Field(description="The editor part this detection became, if any")
+    value_text: str | None = Field(description="The text read as this part's value")
+
+
+class RecognitionWarning(BaseModel):
+    code: str
+    message: str
+    part_ids: list[str]
+
+
+class ImageSize(BaseModel):
+    width: int
+    height: int
+
+
+class RecognitionOut(BaseModel):
+    image: ImageSize
+    schematic: dict[str, Any] = Field(description="Editor schematic, ready to load")
+    netlist: Netlist = Field(description="The netlist the editor derives from `schematic`")
+    detections: list[DetectionOut]
+    warnings: list[RecognitionWarning]

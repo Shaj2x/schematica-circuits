@@ -32,7 +32,7 @@ POST /api/explain {netlist}
 
 | Method | Path | Purpose |
 |--------|------|---------|
-| GET | `/api/health` | Status, and whether explanations come from `template` or `claude`. |
+| GET | `/api/health` | Status, whether explanations come from `template` or `claude`, and whether photo recognition is on. |
 | POST | `/api/solve` | DC solution, or `422 {"error": {...}}` with the structured solver error. |
 | POST | `/api/solve/transient` | Transient run; same error shape. |
 | POST/GET | `/api/circuits` | Save; list (newest first, `limit`/`offset`). |
@@ -40,6 +40,7 @@ POST /api/explain {netlist}
 | GET | `/api/circuits/{id}/history` | Explanations and checks run on a saved circuit. |
 | POST | `/api/explain` | `{netlist}` or `{circuit_id}` → solution and step-by-step explanation. |
 | POST | `/api/check` | Target plus `{answers: {node_voltages, branch_currents}}` → per-answer results and feedback. |
+| POST | `/api/recognize` | Multipart `image` (PNG/JPEG/WebP, ≤ 15 MB) → editor schematic, netlist, detections and warnings. `503` when no model is installed. See [vision.md](vision.md). |
 
 FastAPI also serves interactive docs at `/docs`.
 
@@ -119,6 +120,18 @@ mistakes without any model:
 
 With Claude configured, the model receives this diagnosis and rewords it
 into friendlier feedback. It cannot invent a different mistake.
+
+### Photo recognition is optional
+
+`make_recognizer` loads `ml/weights/model.onnx` (or `MODEL_PATH`) once at
+startup. If the file is not there, the app starts anyway: `/api/health`
+reports `recognition: false` and `/api/recognize` answers 503 with a message
+pointing at the training instructions. The route is a plain `def`, so FastAPI
+runs the CPU-bound pipeline in its thread pool instead of blocking the event
+loop, and onnxruntime sessions are safe to share across threads. Uploads are
+checked for type and size before decoding, and the image is downscaled to
+1600 px on its long side, so a 50-megapixel photo costs no more than a
+phone snapshot.
 
 ### The netlist is a JSONB document, validated by Rust
 

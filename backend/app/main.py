@@ -1,8 +1,8 @@
 """The FastAPI application.
 
 `create_app` takes its dependencies as arguments (settings, database
-sessions, explainer) so tests can pass in a test database and a fake Claude
-client without monkeypatching globals.
+sessions, explainer, recognizer) so tests can pass in a test database, a fake
+Claude client and a fake detector without monkeypatching globals.
 """
 
 from __future__ import annotations
@@ -16,7 +16,8 @@ from sqlalchemy.orm import Session, sessionmaker
 from .config import Settings, get_settings
 from .db import make_sessionmaker
 from .explain import Explainer, make_explainer
-from .routes import analysis, circuits
+from .recognition import Recognizer, make_recognizer
+from .routes import analysis, circuits, recognize
 from .schemas import Health
 
 
@@ -24,12 +25,14 @@ def create_app(
     settings: Settings | None = None,
     session_factory: sessionmaker[Session] | None = None,
     explainer: Explainer | None = None,
+    recognizer: Recognizer | None = None,
 ) -> FastAPI:
     settings = settings or get_settings()
     app = FastAPI(title="Schematica API", version="0.1.0")
     app.state.settings = settings
     app.state.sessionmaker = session_factory or make_sessionmaker(settings.database_url)
     app.state.explainer = explainer or make_explainer(settings)
+    app.state.recognizer = recognizer or make_recognizer(settings)
 
     app.add_middleware(
         CORSMiddleware,
@@ -48,8 +51,11 @@ def create_app(
 
     @app.get("/api/health", response_model=Health)
     def health() -> Health:
-        return Health(status="ok", explanations=app.state.explainer.source)
+        return Health(
+            status="ok", explanations=app.state.explainer.source, recognition=app.state.recognizer.available
+        )
 
     app.include_router(circuits.router)
     app.include_router(analysis.router)
+    app.include_router(recognize.router)
     return app
