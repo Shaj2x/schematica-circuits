@@ -33,6 +33,9 @@ from .types import Box, Detection
 Side = Literal["left", "right", "top", "bottom"]
 Axis = Literal["horizontal", "vertical"]
 
+# Boxes at least this much longer than wide run along their long side.
+ELONGATED = 1.3
+
 OPPOSITE: dict[Side, Side] = {"left": "right", "right": "left", "top": "bottom", "bottom": "top"}
 
 
@@ -171,10 +174,18 @@ def trace(ink: Image, detections: list[Detection]) -> Tracing:
         }
 
         if detection.label in COMPONENT_KINDS:
-            horizontal = touching["left"][1] + touching["right"][1]
-            vertical = touching["top"][1] + touching["bottom"][1]
-            # Ties (nothing touching either axis) fall back to the box shape.
-            if horizontal > vertical or (horizontal == vertical and box.width >= box.height):
+            # An elongated box says which way the part runs. Only near-square
+            # symbols (source circles, some capacitors) are decided by which
+            # pair of sides the wires touch: counting ink on every part would
+            # let a handwritten value above a resistor outvote its wires.
+            aspect = box.width / max(box.height, 1e-9)
+            if aspect >= ELONGATED or aspect <= 1 / ELONGATED:
+                horizontal_axis = aspect > 1
+            else:
+                horizontal = touching["left"][1] + touching["right"][1]
+                vertical = touching["top"][1] + touching["bottom"][1]
+                horizontal_axis = horizontal > vertical or (horizontal == vertical and aspect >= 1)
+            if horizontal_axis:
                 parts.append(TracedPart(detection, "horizontal", (terminal["left"], terminal["right"])))
             else:
                 parts.append(TracedPart(detection, "vertical", (terminal["top"], terminal["bottom"])))

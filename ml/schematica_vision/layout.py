@@ -17,7 +17,7 @@ to confirm each terminal ended up on the net it was traced to.
 from __future__ import annotations
 
 import itertools
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
 from dataclasses import dataclass, field
 from itertools import pairwise
 from statistics import median
@@ -345,7 +345,9 @@ def layout(parts: list[PartSpec], grounds: list[GroundSpec]) -> Layout:
                     {"id": f"W{len(wires) + 1}", "a": {"x": s[0], "y": s[1]}, "b": {"x": t[0], "y": t[1]}}
                 )
 
-    schematic = {"parts": schematic_parts, "wires": wires, "grounds": schematic_grounds}
+    schematic, move = _compress({"parts": schematic_parts, "wires": wires, "grounds": schematic_grounds})
+    net_points = {n: [move(p) for p in points] for n, points in net_points.items()}
+    ground_points = {move(p) for p in ground_points}
 
     # Check: every traced net is exactly one node, and no node holds two
     # nets (all grounded nets count as one, since every ground symbol is).
@@ -366,6 +368,46 @@ def layout(parts: list[PartSpec], grounds: list[GroundSpec]) -> Layout:
 
     schematic = _at_origin(schematic)
     return Layout(schematic, netlist_of(schematic), sorted(unrouted), scale)
+
+
+MAX_GAP = 3
+
+
+def _compress(schematic: dict[str, Any]) -> tuple[dict[str, Any], Callable[[Point], Point]]:
+    """Closes up empty space: any run of more than MAX_GAP empty grid columns
+    (or rows) shrinks to MAX_GAP. Hand drawings spread out, and a photo
+    snapped at part size can be 40 columns wide with most of it empty.
+
+    The x and y remaps are monotone and keep every gap of MAX_GAP or less
+    exactly, so parts keep their length, every wire stays horizontal or
+    vertical, and a point lies on a wire afterwards exactly when it did
+    before: no connection changes. (The caller re-checks anyway.)
+    """
+    points = [_pt(p) for part in schematic["parts"] for p in (part["a"], part["b"])]
+    points += [_pt(p) for wire in schematic["wires"] for p in (wire["a"], wire["b"])]
+    points += [_pt(g["at"]) for g in schematic["grounds"]]
+
+    def remap(values: set[int]) -> dict[int, int]:
+        ordered = sorted(values)
+        mapping = {ordered[0]: ordered[0]} if ordered else {}
+        for previous, value in pairwise(ordered):
+            mapping[value] = mapping[previous] + min(value - previous, MAX_GAP)
+        return mapping
+
+    fx, fy = remap({x for x, _ in points}), remap({y for _, y in points})
+
+    def move(p: Point) -> Point:
+        return (fx[p[0]], fy[p[1]])
+
+    def moved(p: dict[str, int]) -> dict[str, int]:
+        x, y = move(_pt(p))
+        return {"x": x, "y": y}
+
+    return {
+        "parts": [{**part, "a": moved(part["a"]), "b": moved(part["b"])} for part in schematic["parts"]],
+        "wires": [{**wire, "a": moved(wire["a"]), "b": moved(wire["b"])} for wire in schematic["wires"]],
+        "grounds": [{**g, "at": moved(g["at"])} for g in schematic["grounds"]],
+    }, move
 
 
 def _at_origin(schematic: dict[str, Any]) -> dict[str, Any]:

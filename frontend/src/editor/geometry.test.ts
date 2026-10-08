@@ -13,6 +13,6 @@ describe('canvasSize', () => {
       wires: [],
       grounds: [{ id: 'G1', at: { x: 1, y: 15 } }],
     }
-    expect(canvasSize(schematic)).toEqual({ cols: 27, rows: 17 })
+    expect(canvasSize(schematic)).toEqual({ cols: 28, rows: 17 })
   })
 })

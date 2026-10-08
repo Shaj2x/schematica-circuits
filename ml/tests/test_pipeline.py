@@ -157,3 +157,24 @@ def test_overlapping_parts_are_nudged_apart() -> None:
     points = [(p[k]["x"], p[k]["y"]) for p in result.schematic["parts"] for k in ("a", "b")]
     assert len(points) == len(set(points)) == 6
     assert result.unrouted == []
+
+
+def test_text_above_a_part_does_not_turn_it() -> None:
+    # Without a text box, the value's ink stays in the image right above the
+    # resistor; the box shape still says the resistor is horizontal.
+    rendering = render(DIVIDER)
+    detector = GroundTruthDetector(rendering, drop={"text"})
+    result = recognize(rendering.image, detector, None)
+    horizontal = {p["id"] for p in result["schematic"]["parts"] if p["a"]["y"] == p["b"]["y"]}
+    assert horizontal == {"R1"}  # the only part drawn horizontally
+    assert codes(result) <= {"polarity", "default_value"}
+
+
+def test_missed_symbol_shows_up_as_a_shorted_part() -> None:
+    # LADDER has I1, R1 and the L1-C1 branch in parallel. If R1 is missed, its
+    # zigzag is just ink joining the two rails, which shorts out I1.
+    rendering = render(LADDER)
+    detector = GroundTruthDetector(rendering, drop={"resistor"})
+    result = recognize(rendering.image, detector, GroundTruthReader(rendering))
+    shorted = next(w for w in result["warnings"] if w["code"] == "shorted")
+    assert shorted["part_ids"] == ["I1"]

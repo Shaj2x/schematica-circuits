@@ -194,6 +194,14 @@ def recognize(
     ]
     if open_ends:
         warn("unconnected", "No wire was found on one side of these parts.", open_ends)
+    shorted = [s.id for s in specs if s.nets[0] is not None and s.nets[0] == s.nets[1]]
+    if shorted:
+        warn(
+            "shorted",
+            "Both ends of these parts are on the same wire, so they do nothing. "
+            "A symbol between them may have been missed.",
+            shorted,
+        )
     if result.unrouted:
         warn(
             "unrouted",

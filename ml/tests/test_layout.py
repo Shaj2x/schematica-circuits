@@ -103,3 +103,17 @@ def test_golden_fixture_for_the_frontend() -> None:
     if os.environ.get("UPDATE_GOLDEN"):
         GOLDEN.write_text(text)
     assert GOLDEN.read_text() == text
+
+
+def test_empty_space_is_closed_up_without_changing_connections() -> None:
+    # Two resistors drawn far apart (in grid units after snapping: 40 apart).
+    specs = [
+        PartSpec("R1", "resistor", 1, "horizontal", (100, 100), 100, (1, 2)),
+        PartSpec("R2", "resistor", 2, "horizontal", (2100, 100), 100, (2, 3)),
+    ]
+    result = layout(specs, [])
+    xs = [p[k]["x"] for p in result.schematic["parts"] for k in ("a", "b")]
+    assert max(xs) - min(xs) <= 2 + 3 + 2
+    r1, r2 = result.netlist["components"]
+    assert r1["b"] == r2["a"] and r1["a"] != r2["b"]
+    assert result.unrouted == []

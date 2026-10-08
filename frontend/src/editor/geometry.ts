@@ -38,7 +38,7 @@ export function canvasSize(schematic: Schematic): { cols: number; rows: number }
     ...schematic.grounds.map((g) => ({ x: g.at.x, y: g.at.y + 1 })), // room for the symbol below
   ]
   return {
-    cols: Math.max(COLS, ...points.map((p) => p.x + 1)),
+    cols: Math.max(COLS, ...points.map((p) => p.x + 2)), // labels sit right of vertical parts
     rows: Math.max(ROWS, ...points.map((p) => p.y + 1)),
   }
 }
