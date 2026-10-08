@@ -20,7 +20,7 @@ ocr = ["rapidocr-onnxruntime>=1.4,<2"]
 [dependency-groups]
 dev = ["pytest>=8", "ruff>=0.6", "mypy>=1.11"]
 # Training only (AGPL-3.0, see ml/README.md). Not needed to run the app.
-train = ["ultralytics>=8.3,<9"]
+train = ["ultralytics>=8.3,<9", "onnx>=1.16", "onnxslim>=0.1"]
 
 [tool.uv]
 # rapidocr depends on opencv-python, the GUI build of OpenCV. It installs the

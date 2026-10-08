@@ -119,3 +119,16 @@ def test_real_ocr_reads_rendered_values() -> None:
     result = recognize(rendering.image, GroundTruthDetector(rendering), RapidTextReader())
     assert_equivalent(result["netlist"], netlist_of(LADDER))
     assert "default_value" not in codes(result)
+
+
+@pytest.mark.parametrize("seed", range(10))
+def test_recovers_random_ladders(seed: int) -> None:
+    import random
+
+    from schematica_vision.synthetic import random_ladder
+
+    schematic = random_ladder(random.Random(seed))
+    rendering = render(schematic, seed=seed, jitter=1.5, wire_gap=4)
+    result = recognize(rendering.image, GroundTruthDetector(rendering), GroundTruthReader(rendering))
+    ids = {source: result["detections"][i]["part_id"] for i, source in rendering.sources.items()}
+    assert_equivalent(result["netlist"], netlist_of(schematic), ids)

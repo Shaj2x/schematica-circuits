@@ -41,6 +41,7 @@ class Rendering:
     image: Image
     detections: list[Detection]  # ground truth, confidence 1
     texts: dict[tuple[int, int, int, int], str]  # rounded text box -> its text
+    sources: dict[int, str]  # index into detections -> id of the part drawn there
 
 
 def format_value(value: float, unit: str) -> str:
@@ -164,6 +165,7 @@ def render(
 
     detections: list[Detection] = []
     texts: dict[tuple[int, int, int, int], str] = {}
+    sources: dict[int, str] = {}
 
     for wire in schematic["wires"]:
         (ax, ay), (bx, by) = px(wire["a"]), px(wire["b"])
@@ -186,6 +188,7 @@ def render(
     for part in schematic["parts"]:
         a, b = px(part["a"]), px(part["b"])
         box = _symbol(pen, part["kind"], a, b, body=unit * 1.15)
+        sources[len(detections)] = part["id"]
         detections.append(Detection(part["kind"], 1.0, box))
         if labels:
             text = format_value(part["value"], UNIT_SYMBOLS[part["kind"]])
@@ -223,7 +226,7 @@ def render(
             )
         )
 
-    return Rendering(image, detections, texts)
+    return Rendering(image, detections, texts, sources)
 
 
 def _key(box: Box) -> tuple[int, int, int, int]:
@@ -252,3 +255,59 @@ class GroundTruthReader:
 
         # Crops arrive in detection order, which is render order.
         return TextRead(self.pending.pop(0), 0.99) if self.pending else None
+
+
+def random_ladder(rng: random.Random, branches: int | None = None) -> dict[str, Any]:
+    """A random ladder circuit: a source on the left, then branches between a
+    top and a bottom rail, some with a series part on the top rail between
+    them. Enough variety (kinds, orientations, junctions) for a smoke-test
+    dataset; nowhere near the variety of real drawings."""
+    branches = branches or rng.randint(1, 4)
+    kinds = ["resistor", "resistor", "capacitor", "inductor", "current_source", "voltage_source"]
+    values = {
+        "resistor": [100, 220, 470, 1000, 2200, 4700, 10_000, 47_000],
+        "capacitor": [1e-9, 1e-8, 1e-7, 1e-6, 4.7e-6],
+        "inductor": [1e-3, 1e-2, 0.1],
+        "voltage_source": [1.5, 3, 5, 9, 12],
+        "current_source": [1e-3, 2e-3, 1e-2],
+    }
+    counts: dict[str, int] = {}
+
+    def make(kind: str, a: tuple[int, int], b: tuple[int, int]) -> dict[str, Any]:
+        counts[kind] = counts.get(kind, 0) + 1
+        prefix = {"resistor": "R", "capacitor": "C", "inductor": "L", "voltage_source": "V", "current_source": "I"}
+        return {
+            "id": f"{prefix[kind]}{counts[kind]}",
+            "kind": kind,
+            "a": {"x": a[0], "y": a[1]},
+            "b": {"x": b[0], "y": b[1]},
+            "value": rng.choice(values[kind]),
+        }
+
+    def wire(p: tuple[int, int], q: tuple[int, int]) -> dict[str, Any]:
+        return {"id": "", "a": {"x": p[0], "y": p[1]}, "b": {"x": q[0], "y": q[1]}}
+
+    source = rng.choice(["voltage_source", "voltage_source", "current_source"])
+    a, b = ((0, 3), (0, 1)) if source == "current_source" else ((0, 1), (0, 3))
+    parts = [make(source, a, b)]
+    wires = [wire((0, 1), (0, 0)), wire((0, 3), (0, 4))]
+    x = 0
+    for _ in range(branches):
+        start = x
+        if rng.random() < 0.6:  # a series part on the top rail first
+            parts.append(make(rng.choice(kinds[:4]), (x + 1, 0), (x + 3, 0)))
+            wires.append(wire((x, 0), (x + 1, 0)))
+            x += 3
+        # Three units apart, so each value label has room beside its part.
+        nx = x + 3
+        wires += [wire((x, 0), (nx, 0)), wire((nx, 0), (nx, 1)), wire((nx, 3), (nx, 4)), wire((start, 4), (nx, 4))]
+        kind = rng.choice(kinds)
+        # Drawn the conventional way up (arrow up, + on top), which is what
+        # the pipeline assumes when it cannot see polarity.
+        a, b = ((nx, 3), (nx, 1)) if kind == "current_source" else ((nx, 1), (nx, 3))
+        parts.append(make(kind, a, b))
+        x = nx
+    for i, w in enumerate(wires):
+        w["id"] = f"W{i + 1}"
+    grounds = [{"id": "G1", "at": {"x": rng.randint(0, x), "y": 4}}]
+    return {"parts": parts, "wires": wires, "grounds": grounds}
