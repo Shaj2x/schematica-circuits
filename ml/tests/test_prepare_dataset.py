@@ -4,7 +4,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parents[1] / "training"))
 
-import prepare_dataset as prep  # noqa: E402
+import prepare_dataset as prep
 
 
 def test_maps_cghd_labels() -> None:

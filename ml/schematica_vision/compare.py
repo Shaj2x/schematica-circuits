@@ -21,6 +21,8 @@ def difference(got: dict[str, Any], want: dict[str, Any], ids: dict[str, str] | 
     matched through `ids` (wanted id -> recognized id) when given, else by
     type and value, which must then be unique.
     """
+    got_by: dict[Any, dict[str, Any]]
+    want_by: dict[Any, dict[str, Any]]
     if ids is not None:
         got_by = {c["id"]: c for c in got["components"]}
         want_by = {ids.get(c["id"], f"missing:{c['id']}"): c for c in want["components"]}

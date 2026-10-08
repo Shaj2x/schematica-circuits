@@ -32,8 +32,8 @@ import cv2
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from schematica_vision.classes import CLASSES  # noqa: E402
-from schematica_vision.synthetic import random_ladder, render  # noqa: E402
+from schematica_vision.classes import CLASSES
+from schematica_vision.synthetic import random_ladder, render
 
 # CGHD label -> our class, or None to drop the box. Unlisted labels become
 # "other": a real symbol we cannot simulate, which the app reports instead of
@@ -134,7 +134,10 @@ def split_by_drafter(samples: list[Sample], seed: int, val: float, test: float) 
     n_val = max(1, round(len(drafters) * val))
     assignment = {d: "test" for d in drafters[:n_test]}
     assignment |= {d: "val" for d in drafters[n_test : n_test + n_val]}
-    print("drafters per split:", {s: sorted(d for d, v in assignment.items() if v == s) for s in ("val", "test")})
+    print(
+        "drafters per split:",
+        {s: sorted(d for d, v in assignment.items() if v == s) for s in ("val", "test")},
+    )
     return {split: [s for s in samples if assignment.get(s.drafter, "train") == split] for split in SPLITS}
 
 
@@ -149,7 +152,9 @@ def write_split(samples: list[Sample], out: Path, split: str) -> None:
         height, width = image.shape[:2]
         scale = min(1.0, MAX_SIDE / max(height, width))
         if scale < 1:
-            image = cv2.resize(image, (round(width * scale), round(height * scale)), interpolation=cv2.INTER_AREA)
+            image = cv2.resize(
+                image, (round(width * scale), round(height * scale)), interpolation=cv2.INTER_AREA
+            )
         stem = f"{sample.drafter}_{i:05d}_{sample.image.stem}"
         cv2.imwrite(str(out / "images" / split / f"{stem}.jpg"), image, [cv2.IMWRITE_JPEG_QUALITY, 92])
         # YOLO labels are normalised, so they do not change with the resize.
@@ -180,7 +185,9 @@ def synthetic_samples(count: int, out: Path, seed: int) -> list[Sample]:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser = argparse.ArgumentParser(
+        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
+    )
     source = parser.add_mutually_exclusive_group(required=True)
     source.add_argument("--cghd", type=Path, help="folder the CGHD archive was extracted to")
     source.add_argument("--synthetic", type=int, metavar="N", help="render N random circuits instead")
@@ -208,9 +215,8 @@ def main() -> None:
         print(f"{split}: {len(items)} images, boxes: {dict(sorted(n_boxes.items()))}")
 
     names = "\n".join(f"  {i}: {name}" for i, name in enumerate(CLASSES))
-    (args.out / "data.yaml").write_text(
-        f"path: {args.out.resolve()}\ntrain: images/train\nval: images/val\ntest: images/test\nnames:\n{names}\n"
-    )
+    paths = "".join(f"{split}: images/{split}\n" for split in SPLITS)
+    (args.out / "data.yaml").write_text(f"path: {args.out.resolve()}\n{paths}names:\n{names}\n")
     print(f"wrote {args.out / 'data.yaml'}")
 
 

@@ -264,7 +264,7 @@ def random_ladder(rng: random.Random, branches: int | None = None) -> dict[str, 
     dataset; nowhere near the variety of real drawings."""
     branches = branches or rng.randint(1, 4)
     kinds = ["resistor", "resistor", "capacitor", "inductor", "current_source", "voltage_source"]
-    values = {
+    values: dict[str, list[float]] = {
         "resistor": [100, 220, 470, 1000, 2200, 4700, 10_000, 47_000],
         "capacitor": [1e-9, 1e-8, 1e-7, 1e-6, 4.7e-6],
         "inductor": [1e-3, 1e-2, 0.1],
@@ -275,7 +275,13 @@ def random_ladder(rng: random.Random, branches: int | None = None) -> dict[str, 
 
     def make(kind: str, a: tuple[int, int], b: tuple[int, int]) -> dict[str, Any]:
         counts[kind] = counts.get(kind, 0) + 1
-        prefix = {"resistor": "R", "capacitor": "C", "inductor": "L", "voltage_source": "V", "current_source": "I"}
+        prefix = {
+            "resistor": "R",
+            "capacitor": "C",
+            "inductor": "L",
+            "voltage_source": "V",
+            "current_source": "I",
+        }
         return {
             "id": f"{prefix[kind]}{counts[kind]}",
             "kind": kind,
@@ -300,7 +306,12 @@ def random_ladder(rng: random.Random, branches: int | None = None) -> dict[str, 
             x += 3
         # Three units apart, so each value label has room beside its part.
         nx = x + 3
-        wires += [wire((x, 0), (nx, 0)), wire((nx, 0), (nx, 1)), wire((nx, 3), (nx, 4)), wire((start, 4), (nx, 4))]
+        wires += [
+            wire((x, 0), (nx, 0)),
+            wire((nx, 0), (nx, 1)),
+            wire((nx, 3), (nx, 4)),
+            wire((start, 4), (nx, 4)),
+        ]
         kind = rng.choice(kinds)
         # Drawn the conventional way up (arrow up, + on top), which is what
         # the pipeline assumes when it cannot see polarity.

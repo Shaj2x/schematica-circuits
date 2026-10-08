@@ -43,10 +43,14 @@ def draw(image: Image, result: dict[str, Any]) -> Image:
     out = image.copy()
     for d in result["detections"]:
         x0, y0, x1, y1 = (round(v) for v in d["box"])
-        color = COLORS["used"] if d["part_id"] else COLORS["other"] if d["label"] == "other" else COLORS["mark"]
+        color = (
+            COLORS["used"] if d["part_id"] else COLORS["other"] if d["label"] == "other" else COLORS["mark"]
+        )
         cv2.rectangle(out, (x0, y0), (x1, y1), color, 2)
         caption = f"{d['part_id'] or d['label']} {d['confidence']:.2f}"
-        cv2.putText(out, caption, (x0, max(12, y0 - 4)), cv2.FONT_HERSHEY_SIMPLEX, 0.45, color, 1, cv2.LINE_AA)
+        cv2.putText(
+            out, caption, (x0, max(12, y0 - 4)), cv2.FONT_HERSHEY_SIMPLEX, 0.45, color, 1, cv2.LINE_AA
+        )
     return out
 
 
@@ -87,7 +91,9 @@ def photos(detector: OnnxDetector, reader: RapidTextReader | None, folder: Path,
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser = argparse.ArgumentParser(
+        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
+    )
     parser.add_argument("--model", type=Path, default=ROOT / "weights/model.onnx")
     parser.add_argument("--synthetic", type=int, metavar="N")
     parser.add_argument("--photos", type=Path)

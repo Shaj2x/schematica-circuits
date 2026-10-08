@@ -39,6 +39,7 @@ packages = ["schematica_vision"]
 [tool.ruff]
 line-length = 110
 target-version = "py311"
+extend-exclude = ["*.ipynb"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "B", "UP", "SIM", "RUF"]
@@ -48,8 +49,13 @@ allowed-confusables = ["−", "µ", "Ω"]
 strict = true
 
 [[tool.mypy.overrides]]
-module = ["cv2.*", "onnxruntime.*", "rapidocr_onnxruntime.*", "ultralytics.*"]
+module = ["cv2.*", "onnxruntime.*", "rapidocr_onnxruntime.*"]
 ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+# Training only, and untyped: treat it as Any rather than type-check its internals.
+module = ["ultralytics.*"]
+follow_imports = "skip"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
